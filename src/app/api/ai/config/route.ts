@@ -44,6 +44,20 @@ export async function GET() {
     }
 
     if (!data) return NextResponse.json({ configured: false })
+
+    // An active message-level automation makes the auto-reply bot stand
+    // down for the whole account (see dispatchInboundToAiReply). Surface
+    // it so the inbox banner doesn't claim the AI is replying while the
+    // automation answers instead. Best-effort: on error, report none.
+    const { data: overriding } = await supabase
+      .from('automations')
+      .select('id, name')
+      .eq('account_id', accountId)
+      .eq('is_active', true)
+      .in('trigger_type', ['new_message_received', 'keyword_match'])
+      .order('created_at', { ascending: true })
+      .limit(1)
+
     // The keys are selected only to derive the has_* flags; neither is
     // returned to the client.
     const { api_key, embeddings_api_key, ...safe } = data
@@ -51,6 +65,7 @@ export async function GET() {
       configured: true,
       has_key: !!api_key,
       has_embeddings_key: !!embeddings_api_key,
+      overriding_automation: overriding?.[0] ?? null,
       ...safe,
     })
   } catch (err) {

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Sparkles, Hand, Undo2, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Sparkles, Hand, Undo2, Loader2, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
@@ -20,25 +21,33 @@ import { useAuth } from "@/hooks/use-auth";
 // ------------------------------------------------------------
 interface AiAccountStatus {
   autoReplyOn: boolean;
+  /** An active message-level automation that makes the bot stand down
+   *  account-wide (it answers inbound messages instead). */
+  overridingAutomation: { id: string; name: string } | null;
 }
-const statusCache = new Map<string, AiAccountStatus>();
+const OFF: AiAccountStatus = { autoReplyOn: false, overridingAutomation: null };
+// Short TTL so toggling an automation (or the bot) elsewhere shows up on
+// the next thread open without a full reload.
+const STATUS_TTL_MS = 60_000;
+const statusCache = new Map<string, { status: AiAccountStatus; at: number }>();
 
 async function fetchAiAccountStatus(accountId: string): Promise<AiAccountStatus> {
   const cached = statusCache.get(accountId);
-  if (cached) return cached;
+  if (cached && Date.now() - cached.at < STATUS_TTL_MS) return cached.status;
   try {
     const res = await fetch("/api/ai/config", { cache: "no-store" });
-    if (!res.ok) return { autoReplyOn: false }; // don't cache a transient failure
+    if (!res.ok) return OFF; // don't cache a transient failure
     const j = await res.json();
-    const status = {
+    const status: AiAccountStatus = {
       // AI auto-reply is "live" only when configured, the master switch
       // is on, and the inbound bot is enabled.
       autoReplyOn: !!(j?.configured && j?.is_active && j?.auto_reply_enabled),
+      overridingAutomation: j?.overriding_automation ?? null,
     };
-    statusCache.set(accountId, status);
+    statusCache.set(accountId, { status, at: Date.now() });
     return status;
   } catch {
-    return { autoReplyOn: false }; // don't cache
+    return OFF; // don't cache
   }
 }
 
@@ -67,6 +76,8 @@ interface AiThreadBannerProps {
  * conversation:
  *   - bot active here → "AI is replying automatically" + [Take over]
  *   - bot paused here → the handoff note (if any) + [Resume AI]
+ *   - an active message-level automation overrides the bot account-wide
+ *     → "AI is standing by — automation X replies…" + [View automation]
  * Renders nothing when the account has no auto-reply configured, or when
  * the bot is active but a human already owns the thread (nothing to do).
  */
@@ -81,6 +92,8 @@ export function AiThreadBanner({
   const t = useTranslations("Inbox.aiBanner");
   const { accountId } = useAuth();
   const [autoReplyOn, setAutoReplyOn] = useState<boolean | null>(null);
+  const [overridingAutomation, setOverridingAutomation] =
+    useState<AiAccountStatus["overridingAutomation"]>(null);
   const [busy, setBusy] = useState(false);
   // Optimistic local mirror of the pause flag so the banner flips
   // instantly on click; re-seeds whenever the thread (or its server
@@ -91,11 +104,17 @@ export function AiThreadBanner({
   useEffect(() => {
     if (!accountId) return;
     let alive = true;
-    fetchAiAccountStatus(accountId).then((s) => alive && setAutoReplyOn(s.autoReplyOn));
+    fetchAiAccountStatus(accountId).then((s) => {
+      if (!alive) return;
+      setAutoReplyOn(s.autoReplyOn);
+      setOverridingAutomation(s.overridingAutomation);
+    });
     return () => {
       alive = false;
     };
-  }, [accountId]);
+    // Re-check on thread switch too, so the 60s TTL can pick up an
+    // automation that was toggled meanwhile.
+  }, [accountId, conversationId]);
 
   const toggle = useCallback(
     async (paused: boolean) => {
@@ -158,6 +177,32 @@ export function AiThreadBanner({
 
   // Active, but a human already owns it → the bot won't fire; no banner.
   if (assignedAgentId) return null;
+
+  // Switched on, but an active automation answers inbound messages, so
+  // the bot stands down account-wide. Say so instead of claiming the AI
+  // is replying, and link to the automation that's in the way.
+  if (overridingAutomation) {
+    return (
+      <Banner tone="muted">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+          <span
+            className="truncate font-medium text-foreground"
+            title={t("overriddenText", { name: overridingAutomation.name })}
+          >
+            {t("overriddenText", { name: overridingAutomation.name })}
+          </span>
+        </div>
+        <Link
+          href={`/automations/${overridingAutomation.id}/edit`}
+          className="inline-flex flex-shrink-0 items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 font-medium text-foreground transition-colors hover:bg-muted"
+        >
+          <Workflow className="h-3 w-3" />
+          {t("viewAutomation")}
+        </Link>
+      </Banner>
+    );
+  }
 
   // Active on this thread.
   return (
