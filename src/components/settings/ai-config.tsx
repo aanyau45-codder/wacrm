@@ -277,7 +277,7 @@ export function AiConfig() {
                   disabled={disabled}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>{PROVIDER_LABEL[provider]}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="openai">{PROVIDER_LABEL.openai}</SelectItem>
@@ -475,7 +475,16 @@ export function AiConfig() {
                 disabled={disabled || !autoReplyEnabled}
               >
                 <SelectTrigger id="ai-handoff">
-                  <SelectValue />
+                  {/* Render the member's name, not the raw user id the
+                      Select would otherwise show. Falls back to the id
+                      only if the member can't be found (e.g. removed). */}
+                  <SelectValue>
+                    {(() => {
+                      if (!handoffAgentId) return t('handoffQueue');
+                      const m = members.find((x) => x.user_id === handoffAgentId);
+                      return m ? memberLabel(m) : handoffAgentId;
+                    })()}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={HANDOFF_QUEUE}>
