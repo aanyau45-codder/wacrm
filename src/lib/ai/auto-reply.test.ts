@@ -133,6 +133,8 @@ describe('dispatchInboundToAiReply — eligibility gates', () => {
     // It still attempts the claim, but the send is skipped.
     expect(h.state.rpcCalls).toHaveLength(1)
     expect(h.engineSendText).not.toHaveBeenCalled()
+    // The cap is now used up, so the thread is paused visibly.
+    expect(h.state.updatePayload).toMatchObject({ ai_autoreply_disabled: true })
   })
 
   it('skips when AI is off / not configured', async () => {
@@ -168,14 +170,34 @@ describe('dispatchInboundToAiReply — eligibility gates', () => {
     expect(h.engineSendText).not.toHaveBeenCalled()
   })
 
-  it('skips when the per-conversation cap is reached', async () => {
+  it('pauses the thread with a note when the per-conversation cap is reached', async () => {
     h.state.conv = {
       assigned_agent_id: null,
       ai_autoreply_disabled: false,
       ai_reply_count: 3,
     }
     await dispatchInboundToAiReply(ARGS)
+    expect(h.generateReply).not.toHaveBeenCalled()
     expect(h.engineSendText).not.toHaveBeenCalled()
+    expect(h.state.rpcCalls).toHaveLength(0)
+    // Not a silent skip: the inbox banner must stop claiming the bot is
+    // replying, so the thread is paused with an explanatory note.
+    expect(h.state.updatePayload).toMatchObject({ ai_autoreply_disabled: true })
+    expect(h.state.updatePayload?.ai_handoff_summary).toContain('3-reply limit')
+  })
+
+  it('routes to the handoff agent when the cap is reached', async () => {
+    h.loadAiConfig.mockResolvedValue(aiConfig({ handoffAgentId: 'agent-7' }))
+    h.state.conv = {
+      assigned_agent_id: null,
+      ai_autoreply_disabled: false,
+      ai_reply_count: 3,
+    }
+    await dispatchInboundToAiReply(ARGS)
+    expect(h.state.updatePayload).toMatchObject({
+      ai_autoreply_disabled: true,
+      assigned_agent_id: 'agent-7',
+    })
   })
 
   it('skips when there is nothing to reply to', async () => {

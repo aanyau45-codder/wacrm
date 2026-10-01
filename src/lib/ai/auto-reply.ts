@@ -32,8 +32,10 @@ interface DispatchArgs {
  *   - AI off / auto-reply disabled for the account
  *   - a human agent is assigned (they own the thread)
  *   - auto-reply was disabled for this conversation (prior handoff)
- *   - the per-conversation reply cap is reached
  *   - there's nothing to reply to
+ *
+ * Reaching the per-conversation reply cap is NOT a silent no-op: the
+ * thread is paused with a handoff note, so the inbox shows it.
  *
  * The 24h WhatsApp session window is inherently open here — we're
  * reacting to a customer message that just landed — so no separate
@@ -65,7 +67,14 @@ export async function dispatchInboundToAiReply(
       .eq('is_active', true)
       .in('trigger_type', ['new_message_received', 'keyword_match'])
       .limit(1)
-    if (autoResponders && autoResponders.length > 0) return
+    if (autoResponders && autoResponders.length > 0) {
+      // Logged so "AI is on but never replies" is diagnosable from the
+      // function logs — the inbox banner can't see this gate.
+      console.warn(
+        `[ai auto-reply] account ${accountId} has an active message-level automation — AI auto-reply stands down.`,
+      )
+      return
+    }
 
     const { data: conv, error: convErr } = await db
       .from('conversations')
@@ -75,11 +84,46 @@ export async function dispatchInboundToAiReply(
     if (convErr || !conv) return
     if (conv.assigned_agent_id) return // a human owns this thread
     if (conv.ai_autoreply_disabled) return // handed off / turned off here
-    // Cheap early-out; the authoritative cap check is the atomic claim
-    // below (this read can race a concurrent inbound).
-    if (conv.ai_reply_count >= config.autoReplyMaxPerConversation) return
 
     const messages = await buildConversationContext(db, conversationId)
+
+    // Stop auto-replying on this thread and hand it to a human: (a) pause
+    // the bot here (sticky until re-enabled), (b) route the conversation
+    // to the configured handoff agent — null leaves it in the shared
+    // queue — and (c) leave a short internal note so whoever picks it up
+    // has context. Assigning fires the `on_conversation_assigned`
+    // trigger, which notifies the agent.
+    const handOff = async (reason: 'model' | 'reply_limit') => {
+      const update: Record<string, unknown> = {
+        ai_autoreply_disabled: true,
+        ai_handoff_summary: buildHandoffSummary({
+          messages,
+          replyCount:
+            reason === 'reply_limit'
+              ? config.autoReplyMaxPerConversation
+              : (conv.ai_reply_count ?? 0),
+          reason,
+        }),
+      }
+      // Only set the assignee when a target is configured AND the thread
+      // isn't already owned — never stomp an existing human assignment.
+      if (config.handoffAgentId && !conv.assigned_agent_id) {
+        update.assigned_agent_id = config.handoffAgentId
+      }
+      await db.from('conversations').update(update).eq('id', conversationId)
+    }
+
+    // Cap used up → pause the thread *visibly* instead of silently
+    // returning. A silent skip left the inbox banner claiming "AI is
+    // replying automatically" while the customer got nothing; pausing
+    // flips the banner to the handoff note + "Resume AI" (which resets
+    // the budget). Cheap early-out; the authoritative cap check is the
+    // atomic claim below (this read can race a concurrent inbound).
+    if (conv.ai_reply_count >= config.autoReplyMaxPerConversation) {
+      await handOff('reply_limit')
+      return
+    }
+
     if (messages.length === 0) return
 
     // Account-wide throttle on the shared BYO key. The per-conversation
@@ -133,27 +177,8 @@ export async function dispatchInboundToAiReply(
     })
 
     if (handoff || !text) {
-      // The model can't (or shouldn't) answer — stop auto-replying on
-      // this thread and hand it to a human. We (a) pause the bot here
-      // (sticky until re-enabled), (b) route the conversation to the
-      // configured handoff agent — null leaves it in the shared queue —
-      // and (c) leave a short internal note so whoever picks it up has
-      // context. Assigning fires the `on_conversation_assigned` trigger,
-      // which notifies the agent.
-      const summary = buildHandoffSummary({
-        messages,
-        replyCount: conv.ai_reply_count ?? 0,
-      })
-      const update: Record<string, unknown> = {
-        ai_autoreply_disabled: true,
-        ai_handoff_summary: summary,
-      }
-      // Only set the assignee when a target is configured AND the thread
-      // isn't already owned — never stomp an existing human assignment.
-      if (config.handoffAgentId && !conv.assigned_agent_id) {
-        update.assigned_agent_id = config.handoffAgentId
-      }
-      await db.from('conversations').update(update).eq('id', conversationId)
+      // The model can't (or shouldn't) answer — hand it to a human.
+      await handOff('model')
       return
     }
 
@@ -177,7 +202,12 @@ export async function dispatchInboundToAiReply(
       console.error('[ai auto-reply] claim_ai_reply_slot failed:', claimErr)
       return
     }
-    if (claimed !== true) return // lost the per-conversation cap race
+    if (claimed !== true) {
+      // A concurrent inbound took the last slot — the cap is now used up,
+      // so pause visibly (same reason as the early-out above).
+      await handOff('reply_limit')
+      return
+    }
 
     await engineSendText({
       accountId,
