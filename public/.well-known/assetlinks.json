@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.argonbuilds.crm",
+      "sha256_cert_fingerprints": [
+        "5E:BB:4D:44:AE:E2:06:A4:6D:03:EB:15:14:37:52:2C:DD:F3:E4:C8:09:37:8F:9F:89:25:0C:6F:D0:26:98:4A"
+      ]
+    }
+  }
+]
