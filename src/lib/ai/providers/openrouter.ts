@@ -34,7 +34,7 @@ export async function generateOpenRouter(args: ProviderArgs): Promise<ProviderRe
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'X-Title': 'WACRM',
+        'X-Title': 'Argon CRM',
       },
       body: JSON.stringify({
         model,
