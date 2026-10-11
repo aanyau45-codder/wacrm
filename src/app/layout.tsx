@@ -6,6 +6,7 @@ import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ThemedToaster } from "@/components/themed-toaster";
+import { AppUpdateBanner } from "@/components/app-update/app-update-banner";
 import {
   DEFAULT_MODE,
   DEFAULT_THEME,
@@ -130,6 +131,7 @@ export default async function RootLayout({
           <ThemeProvider>
             {children}
             <ThemedToaster />
+            <AppUpdateBanner />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

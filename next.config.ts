@@ -141,6 +141,14 @@ const nextConfig: NextConfig = {
         headers: [{ key: "Cache-Control", value: "no-store" }],
       },
       {
+        // Side-loaded Android app updates (see src/lib/android-app.ts).
+        source: "/downloads/:file*.apk",
+        headers: [
+          { key: "Content-Type", value: "application/vnd.android.package-archive" },
+          { key: "Content-Disposition", value: "attachment" },
+        ],
+      },
+      {
         source: "/:path((?!_next/static|_next/image|api).*)",
         headers: [
           {
