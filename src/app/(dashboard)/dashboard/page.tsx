@@ -141,6 +141,7 @@ export default function DashboardPage() {
               title={t('activeConversations')}
               value={metrics.activeConversations.current.toLocaleString()}
               icon={MessageSquare}
+              tone="lilac"
               delta={{
                 sign: metrics.activeConversations.previous,
                 label: deltaLabel(
@@ -154,6 +155,7 @@ export default function DashboardPage() {
               title={t('newContactsToday')}
               value={metrics.newContactsToday.current.toLocaleString()}
               icon={UserPlus}
+              tone="peach"
               delta={{
                 sign:
                   metrics.newContactsToday.current - metrics.newContactsToday.previous,
@@ -168,12 +170,14 @@ export default function DashboardPage() {
               title={t('openDealsValue')}
               value={formatCurrency(metrics.openDealsValue, defaultCurrency)}
               icon={DollarSign}
+              tone="mint"
               subtitle={t('openDeals', { count: metrics.openDealsCount })}
             />
             <MetricCard
               title={t('messagesSentToday')}
               value={metrics.messagesSentToday.current.toLocaleString()}
               icon={Send}
+              tone="coral"
               delta={{
                 sign:
                   metrics.messagesSentToday.current - metrics.messagesSentToday.previous,

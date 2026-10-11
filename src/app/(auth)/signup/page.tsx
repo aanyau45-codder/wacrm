@@ -4,17 +4,14 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { MessageSquare, CheckCircle, UsersRound } from "lucide-react";
+  AuthError,
+  AuthField,
+  AuthFooter,
+  AuthHeader,
+  AuthScreen,
+} from "@/components/auth/auth-ui";
+import { authButton, authLink } from "@/components/auth/auth-styles";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless wrapped in Suspense — same pattern as /login.
@@ -89,156 +86,99 @@ function SignupPageInner() {
     setLoading(false);
   };
 
+  const loginHref = inviteToken
+    ? `/login?invite=${encodeURIComponent(inviteToken)}`
+    : "/login";
+
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <Card className="w-full max-w-md border-border bg-card">
-          <CardHeader className="items-center text-center">
-            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <CheckCircle className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle className="text-xl text-foreground">
-              Check your email
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
+      <AuthScreen back={loginHref}>
+        <AuthHeader
+          title="Check your email"
+          sub={
+            <>
               We&apos;ve sent a confirmation link to{" "}
-              <span className="text-foreground">{email}</span>. Please check your
-              inbox and click the link to verify your account.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href={
-                inviteToken
-                  ? `/login?invite=${encodeURIComponent(inviteToken)}`
-                  : "/login"
-              }
-            >
-              <Button
-                variant="outline"
-                className="w-full border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                Back to sign in
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+              <span className="font-medium text-foreground">{email}</span>. Click it
+              to verify your account.
+            </>
+          }
+        />
+        <div className="mt-auto pt-10">
+          <Link href={loginHref} className={authButton.outline}>
+            Back to log in
+          </Link>
+        </div>
+      </AuthScreen>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md border-border bg-card">
-        <CardHeader className="items-center text-center">
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            {inviteToken ? (
-              <UsersRound className="h-6 w-6 text-primary" />
-            ) : (
-              <MessageSquare className="h-6 w-6 text-primary" />
-            )}
-          </div>
-          <CardTitle className="text-xl text-foreground">
-            {inviteToken ? "Create account & join" : "Create account"}
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            {inviteToken
-              ? "Verify your email, then accept the invitation to join your team."
-              : "Get started with Argon CRM"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignup} className="flex flex-col gap-4">
-            {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                {error}
-              </div>
-            )}
+    <AuthScreen back={inviteToken ? loginHref : "/welcome"}>
+      <AuthHeader
+        title={inviteToken ? "Create account & join" : "Create account"}
+        sub={
+          inviteToken
+            ? "Verify your email, then accept the invitation to join your team."
+            : "Get started with Argon CRM."
+        }
+      />
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="fullName" className="text-muted-foreground">
-                Full name
-              </Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="John Doe"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
+      <form onSubmit={handleSignup} className="mt-8 flex flex-1 flex-col">
+        <div className="flex flex-col gap-5">
+          {error && <AuthError>{error}</AuthError>}
+          <AuthField
+            id="fullName"
+            label="Full name"
+            placeholder="Jane Doe"
+            autoComplete="name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+          />
+          <AuthField
+            id="email"
+            type="email"
+            label="Email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <AuthField
+            id="password"
+            type="password"
+            label="Password"
+            placeholder="At least 6 characters"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <AuthField
+            id="confirmPassword"
+            type="password"
+            label="Confirm password"
+            placeholder="Repeat your password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+        </div>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email" className="text-muted-foreground">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="password" className="text-muted-foreground">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="At least 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="confirmPassword" className="text-muted-foreground">
-                Confirm password
-              </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Repeat your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="mt-2 h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {loading ? "Creating account..." : "Create account"}
-            </Button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-muted-foreground">
+        <div className="mt-auto pt-10">
+          <button type="submit" disabled={loading} className={authButton.dark}>
+            {loading ? "Creating account..." : "Create account"}
+          </button>
+          <AuthFooter>
             Already have an account?{" "}
-            <Link
-              href={
-                inviteToken
-                  ? `/login?invite=${encodeURIComponent(inviteToken)}`
-                  : "/login"
-              }
-              className="text-primary hover:text-primary/80"
-            >
-              Sign in
+            <Link href={loginHref} className={authLink}>
+              Log in
             </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+          </AuthFooter>
+        </div>
+      </form>
+    </AuthScreen>
   );
 }

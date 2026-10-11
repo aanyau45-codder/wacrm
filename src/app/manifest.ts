@@ -15,8 +15,9 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#020617",
-    theme_color: "#020617",
+    // Pastel Cards canvas — the splash screen and status bar match the app.
+    background_color: "#f6f6f8",
+    theme_color: "#f6f6f8",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },

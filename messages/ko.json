@@ -1,4 +1,10 @@
 {
+  "WelcomePage": {
+    "title": "환영합니다",
+    "tagline": "모든 WhatsApp 리드를 한곳에서 차분하게.",
+    "logIn": "로그인",
+    "createAccount": "계정 만들기"
+  },
   "LoginPage": {
     "titleAccept": "로그인하여 수락하기",
     "titleWelcome": "다시 오신 것을 환영합니다",

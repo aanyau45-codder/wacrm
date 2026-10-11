@@ -306,7 +306,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setAccount(null);
-    window.location.href = "/login";
+    window.location.href = "/welcome";
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -369,7 +369,7 @@ export function useAuth(): AuthContextValue {
       loading: false,
       profileLoading: false,
       signOut: async () => {
-        window.location.href = "/login";
+        window.location.href = "/welcome";
       },
       refreshProfile: async () => {},
       account: null,

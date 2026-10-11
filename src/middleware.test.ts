@@ -71,7 +71,7 @@ describe("middleware — refreshed auth cookies survive redirects", () => {
     expect(res.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
   });
 
-  it("carries the rotated token when redirecting an unauth user to /login", async () => {
+  it("carries the rotated token when redirecting an unauth user to /welcome", async () => {
     mockUser = null;
     // Even on the logged-out path getUser() may emit cookie writes (e.g.
     // clearing a dead session); those must not be dropped on the redirect.
@@ -82,7 +82,7 @@ describe("middleware — refreshed auth cookies survive redirects", () => {
     );
 
     expect(res.status).toBe(307);
-    expect(res.headers.get("location")).toContain("/login");
+    expect(res.headers.get("location")).toContain("/welcome");
     expect(res.cookies.get(ROTATED.name)?.value).toBe("cleared");
   });
 

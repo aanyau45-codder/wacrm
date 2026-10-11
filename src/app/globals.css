@@ -9,7 +9,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-poppins);
+  --font-brand: var(--font-fraunces);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,6 +40,10 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-pastel-peach: var(--pastel-peach);
+  --color-pastel-lilac: var(--pastel-lilac);
+  --color-pastel-mint: var(--pastel-mint);
+  --color-pastel-coral: var(--pastel-coral);
   /* Secondary card surface (tile / hover backgrounds) and the accent
    * extras the Settings redesign leans on. The raw --primary-* vars
    * already exist per-accent below; these mappings expose them (and
@@ -114,38 +119,79 @@ html[data-mode="dark"] {
   --sidebar-accent: oklch(0.22 0.01 260);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.28 0.01 260);
+  --pastel-peach: oklch(0.3 0.04 55);
+  --pastel-lilac: oklch(0.3 0.06 285);
+  --pastel-mint: oklch(0.3 0.04 175);
+  --pastel-coral: oklch(0.3 0.05 20);
 }
 
+/* Light mode is the Argon "Pastel Cards" look: soft grey canvas,
+ * white cards, ink text, generous radii. */
 html[data-mode="light"] {
-  --background: oklch(0.99 0.002 260);
-  --foreground: oklch(0.21 0.01 260);
-  --card: oklch(1 0 0);
-  --card-2: oklch(0.985 0.002 260);
-  --card-foreground: oklch(0.21 0.01 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.01 260);
-  --secondary: oklch(0.967 0.003 260);
-  --secondary-foreground: oklch(0.25 0.01 260);
-  --muted: oklch(0.967 0.003 260);
-  --muted-foreground: oklch(0.52 0.015 260);
-  --accent: oklch(0.96 0.004 260);
-  --accent-foreground: oklch(0.25 0.01 260);
+  --background: #f6f6f8;
+  --foreground: #17171c;
+  --card: #ffffff;
+  --card-2: #f9f9fb;
+  --card-foreground: #17171c;
+  --popover: #ffffff;
+  --popover-foreground: #17171c;
+  --secondary: #f1f1f5;
+  --secondary-foreground: #17171c;
+  --muted: #f1f1f5;
+  --muted-foreground: #6b6b7b;
+  --accent: #efeffa;
+  --accent-foreground: #17171c;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0.004 260);
-  --input: oklch(0.922 0.004 260);
-  --chart-2: oklch(0.6 0.1 260);
-  --chart-3: oklch(0.7 0.06 260);
-  --chart-4: oklch(0.8 0.04 260);
-  --chart-5: oklch(0.87 0.03 260);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0.002 260);
-  --sidebar-foreground: oklch(0.21 0.01 260);
-  --sidebar-accent: oklch(0.96 0.004 260);
-  --sidebar-accent-foreground: oklch(0.25 0.01 260);
-  --sidebar-border: oklch(0.922 0.004 260);
+  --border: #ebebf0;
+  --input: #e4e4ea;
+  --chart-2: #f5b48c;
+  --chart-3: #8fd6c6;
+  --chart-4: #f29b9b;
+  --chart-5: #dcdcfb;
+  --radius: 0.875rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #17171c;
+  --sidebar-accent: #f1f1f5;
+  --sidebar-accent-foreground: #17171c;
+  --sidebar-border: #ebebf0;
+  /* Pastel tile fills (dashboard cards, illustrations). */
+  --pastel-peach: #fde3cf;
+  --pastel-lilac: #dcdcfb;
+  --pastel-mint: #c9eee6;
+  --pastel-coral: #fbcaca;
 }
 
 /* ---- ACCENT: primary color ---- */
+
+/* Argon Lilac — the default brand accent. In light mode primary is ink
+ * (dark pill buttons) with lilac as the soft tint; in dark mode the
+ * lilac itself is primary so buttons stay visible. */
+html[data-theme="lilac"] {
+  --primary: #b9b8f2;
+  --primary-foreground: #17171c;
+  --primary-hover: #cac9f6;
+  --primary-soft: rgb(185 184 242 / 0.14);
+  --primary-soft-2: rgb(185 184 242 / 0.24);
+  --ring: #b9b8f2;
+  --chart-1: #b9b8f2;
+  --sidebar-primary: #b9b8f2;
+  --sidebar-primary-foreground: #17171c;
+  --sidebar-ring: #b9b8f2;
+}
+
+html[data-theme="lilac"][data-mode="light"] {
+  --primary: #17171c;
+  --primary-foreground: #ffffff;
+  --primary-hover: #2e2d38;
+  --primary-soft: #ececfd;
+  --primary-soft-2: #dcdcfb;
+  --ring: #b9b8f2;
+  --chart-1: #9b98ea;
+  --sidebar-primary: #17171c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-ring: #b9b8f2;
+}
+
 
 :root,
 html[data-theme="violet"] {
@@ -226,5 +272,10 @@ html[data-theme="rose"] {
   }
   html {
     @apply font-sans;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
   }
 }

@@ -1,18 +1,24 @@
 {
+  "WelcomePage": {
+    "title": "Welcome",
+    "tagline": "Every WhatsApp lead, in one calm place.",
+    "logIn": "Log in",
+    "createAccount": "Create account"
+  },
   "LoginPage": {
     "titleAccept": "Sign in to accept",
-    "titleWelcome": "Welcome back",
+    "titleWelcome": "Log in",
     "descAccept": "Sign in and we'll take you to the invitation.",
-    "descWelcome": "Sign in to your account",
+    "descWelcome": "Good to see you again.",
     "emailLabel": "Email",
     "emailPlaceholder": "you@example.com",
     "passwordLabel": "Password",
     "forgotPassword": "Forgot password?",
     "passwordPlaceholder": "Enter your password",
-    "signingIn": "Signing in...",
-    "signIn": "Sign in",
-    "noAccount": "Don't have an account?",
-    "createAccount": "Create account"
+    "signingIn": "Logging in...",
+    "signIn": "Log in",
+    "noAccount": "No account?",
+    "createAccount": "Sign up"
   },
   "Sidebar": {
     "title": "Argon CRM",

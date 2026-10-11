@@ -49,6 +49,7 @@ export async function middleware(request: NextRequest) {
   // a forwarded invite link to someone who's already signed in
   // would silently drop them on /dashboard.
   if (user && (
+    request.nextUrl.pathname === '/welcome' ||
     request.nextUrl.pathname === '/login' ||
     request.nextUrl.pathname === '/signup' ||
     request.nextUrl.pathname === '/forgot-password'
@@ -69,11 +70,11 @@ export async function middleware(request: NextRequest) {
     return withRefreshedCookies(NextResponse.redirect(url))
   }
 
-  // Protected pages - redirect to login if not authenticated
+  // Protected pages - redirect to the welcome screen if not authenticated
   const protectedPaths = ['/dashboard', '/inbox', '/contacts', '/pipelines', '/broadcasts', '/automations', '/settings']
   if (!user && protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = '/welcome'
     return withRefreshedCookies(NextResponse.redirect(url))
   }
 

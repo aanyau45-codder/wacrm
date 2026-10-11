@@ -14,6 +14,7 @@
  */
 
 export const THEME_IDS = [
+  "lilac",
   "violet",
   "emerald",
   "cobalt",
@@ -23,7 +24,7 @@ export const THEME_IDS = [
 
 export type ThemeId = (typeof THEME_IDS)[number];
 
-export const DEFAULT_THEME: ThemeId = "violet";
+export const DEFAULT_THEME: ThemeId = "lilac";
 
 export const STORAGE_KEY = "wacrm.theme";
 
@@ -34,7 +35,8 @@ export const STORAGE_KEY = "wacrm.theme";
  * `html[data-mode="..."]` blocks (neutral surfaces only). Applied
  * at runtime via `document.documentElement.dataset.mode`. Dark is
  * the historical default and stays the app's identity; light is the
- * opt-in eye-strain-friendly alternative.
+ * opt-in eye-strain-friendly alternative. (Since the Argon rebrand light
+ * "Pastel Cards" is the default and dark is the opt-in.)
  *
  * Persisted under its own localStorage key so it composes freely
  * with the accent choice (you can run Violet-light or Violet-dark).
@@ -43,7 +45,7 @@ export const MODES = ["light", "dark"] as const;
 
 export type Mode = (typeof MODES)[number];
 
-export const DEFAULT_MODE: Mode = "dark";
+export const DEFAULT_MODE: Mode = "light";
 
 export const MODE_STORAGE_KEY = "wacrm.mode";
 
@@ -68,9 +70,15 @@ export interface ThemeMeta {
 
 export const THEMES: ReadonlyArray<ThemeMeta> = [
   {
+    id: "lilac",
+    name: "Argon Lilac",
+    tagline: "The default — soft pastels, ink buttons, calm and premium.",
+    swatch: "#b9b8f2",
+  },
+  {
     id: "violet",
     name: "Violet",
-    tagline: "The default — confident, slightly playful.",
+    tagline: "Confident, slightly playful.",
     swatch: "oklch(0.526 0.247 293)",
   },
   {

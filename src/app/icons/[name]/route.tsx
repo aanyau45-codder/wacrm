@@ -1,11 +1,11 @@
-import { ImageResponse } from "next/og";
+import { brandIconResponse } from "@/lib/brand-icon";
 
 // App launcher icons for the web manifest and the Android app — the same
-// brand mark as src/app/icon.tsx (violet rounded square + white chat
-// glyph), drawn at install sizes.
+// Argon "Dusk Arch" mark as the favicon (src/app/icon.tsx), drawn at
+// install sizes.
 //
 //   /icons/icon-192.png, /icons/icon-512.png  rounded square ("any")
-//   /icons/maskable-512.png                   full-bleed square, glyph kept
+//   /icons/maskable-512.png                   full-bleed square, arch kept
 //                                             inside the 80% safe zone so
 //                                             Android's circle/squircle
 //                                             masks never clip it
@@ -23,40 +23,10 @@ export async function GET(
   const icon = ICONS[name];
   if (!icon) return new Response("Not found", { status: 404 });
 
-  const { size, maskable } = icon;
-  const glyph = Math.round(size * (maskable ? 0.42 : 0.6));
-
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#7c3aed",
-          borderRadius: maskable ? 0 : Math.round(size * 0.2),
-        }}
-      >
-        <svg
-          width={glyph}
-          height={glyph}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#ffffff"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-      </div>
-    ),
-    {
-      width: size,
-      height: size,
-      headers: { "Cache-Control": "public, max-age=86400, immutable" },
-    },
-  );
+  return brandIconResponse(icon.size, {
+    maskable: icon.maskable,
+    // Short cache: the mark changed with the Argon rebrand, and a year-long
+    // immutable cache would pin old launcher icons on installed devices.
+    headers: { "Cache-Control": "public, max-age=3600" },
+  });
 }
