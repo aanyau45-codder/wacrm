@@ -58,6 +58,8 @@ export interface CallLead {
   account_id: string
   user_id: string | null
   contact_id: string | null
+  /** Deal this lead became on the pipeline (migration 042). */
+  deal_id?: string | null
   business_name: string
   contact_person: string | null
   phone: string | null

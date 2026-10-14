@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Pipeline, PipelineStage, Deal } from "@/types";
+import type { Pipeline, PipelineStage, Deal, DealCallLead } from "@/types";
 import { PipelineBoard } from "@/components/pipelines/pipeline-board";
 import { PipelineSettings } from "@/components/pipelines/pipeline-settings";
 import { DealForm } from "@/components/pipelines/deal-form";
@@ -70,6 +70,9 @@ export default function PipelinesPage() {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [defaultStageId, setDefaultStageId] = useState<string>("");
 
+  // /pipelines?deal=ID (from the calls page) opens that deal once loaded.
+  const focusDealId = useRef<string | null>(null);
+
   // Guard against double-seeding (React StrictMode double-effect in dev).
   const seedAttempted = useRef(false);
 
@@ -104,7 +107,21 @@ export default function PipelinesPage() {
         .select("*, contact:contacts(*), assignee:profiles!deals_assigned_to_fkey(*)")
         .eq("pipeline_id", pipelineId)
         .order("created_at", { ascending: false });
-      return (data ?? []) as Deal[];
+      const list = (data ?? []) as Deal[];
+      // Linked call leads (migration 042) — the board shows each deal's
+      // next call. Errors are ignored so the board works before 042.
+      if (list.length) {
+        const { data: leads } = await supabase
+          .from("call_leads")
+          .select("id, deal_id, next_call_date, temperature")
+          .not("deal_id", "is", null)
+          .limit(5000);
+        const byDeal = new Map(
+          ((leads ?? []) as DealCallLead[]).map((l) => [l.deal_id, l]),
+        );
+        for (const d of list) d.call_lead = byDeal.get(d.id) ?? null;
+      }
+      return list;
     },
     [supabase],
   );
@@ -169,6 +186,23 @@ export default function PipelinesPage() {
     };
   }, [loadPipelines, seedDefaultPipeline]);
 
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("deal");
+    if (!id) return;
+    void supabase
+      .from("deals")
+      .select("id, pipeline_id")
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        focusDealId.current = data.id;
+        setSelectedPipelineId(data.pipeline_id);
+      });
+    // Once, on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Load stages + deals whenever selected pipeline changes.
   // Clearing on no-selection is a legitimate sync with URL/prop
   // state; the load completion uses async setters inside promise
@@ -190,6 +224,13 @@ export default function PipelinesPage() {
       if (cancelled) return;
       setStages(s);
       setDeals(d);
+      const focus = d.find((x) => x.id === focusDealId.current);
+      if (focus) {
+        focusDealId.current = null;
+        setEditingDeal(focus);
+        setDefaultStageId(focus.stage_id);
+        setDealFormOpen(true);
+      }
     })();
     return () => {
       cancelled = true;

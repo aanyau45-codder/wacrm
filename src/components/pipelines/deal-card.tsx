@@ -1,8 +1,9 @@
 "use client";
 
 import type { Deal, PipelineStage } from "@/types";
-import { Calendar, Check, X } from "lucide-react";
+import { Calendar, Check, Phone, X } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { formatDay, kampalaToday } from "@/lib/calling/dates";
 import { useTranslations } from "next-intl";
 
 interface DealCardProps {
@@ -91,6 +92,23 @@ export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
           </span>
         )}
       </div>
+
+      {deal.call_lead && (
+        <div className="mt-2">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+              deal.call_lead.next_call_date && deal.call_lead.next_call_date < kampalaToday()
+                ? "bg-pastel-peach text-foreground"
+                : "bg-pastel-lilac text-foreground"
+            }`}
+          >
+            <Phone className="h-3 w-3" />
+            {deal.call_lead.next_call_date
+              ? `Call ${formatDay(deal.call_lead.next_call_date)}`
+              : "From calls"}
+          </span>
+        </div>
+      )}
 
       {assigneeLabel && (
         <div className="mt-2 flex items-center justify-end">

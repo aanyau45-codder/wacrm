@@ -1,21 +1,66 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Loader2, Plus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { GitBranch, Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { TEMPERATURE_META } from '@/lib/calling/defaults'
 import { formatDay, kampalaToday } from '@/lib/calling/dates'
+import { dealStatusForCall, defaultLeadStage } from '@/lib/calling/pipeline'
 import { applyCall, suggestForOutcome } from '@/lib/calling/schedule'
+import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/use-auth'
+import type { DealStatus } from '@/types'
 import { TEMPERATURES, type CallLead, type CallLog, type CallSettings, type Temperature } from '@/lib/calling/types'
 import { cn } from '@/lib/utils'
 
 interface Props {
   lead: CallLead
   settings: CallSettings
+  /** Status of the lead's linked deal, when it has one. */
+  dealStatus?: DealStatus | null
   onSaved: (lead: CallLead, log: CallLog, next: boolean) => void
+}
+
+interface StageOption {
+  id: string
+  name: string
+  position: number
+  pipeline: string
+}
+
+// Pipelines + stages for "Add to pipeline", fetched once per page load.
+let stagesPromise: Promise<{ pipelines: { id: string; name: string; stages: StageOption[] }[] }> | null = null
+function loadStages() {
+  stagesPromise ??= (async () => {
+    const { data, error } = await createClient()
+      .from('pipelines')
+      .select('id, name, stages:pipeline_stages(id, name, position)')
+      .order('created_at')
+    if (error) {
+      stagesPromise = null
+      throw error
+    }
+    return {
+      pipelines: (data ?? []).map((p) => ({
+        id: p.id as string,
+        name: p.name as string,
+        stages: ((p.stages ?? []) as Omit<StageOption, 'pipeline'>[])
+          .map((s) => ({ ...s, pipeline: p.name as string }))
+          .sort((a, b) => a.position - b.position),
+      })),
+    }
+  })()
+  return stagesPromise
+}
+
+const DEAL_STATUS_TEXT: Record<DealStatus, string> = {
+  won: 'Its deal will be marked Won on the pipeline.',
+  lost: 'Its deal will be marked Lost on the pipeline.',
+  open: 'Its deal will be reopened on the pipeline.',
 }
 
 function Chip({
@@ -50,8 +95,9 @@ function Chip({
  * Log a call in a few taps: outcome → (temperature + next date are
  * pre-filled by the rules) → Save. Everything else is optional.
  */
-export function LogCallForm({ lead, settings, onSaved }: Props) {
+export function LogCallForm({ lead, settings, dealStatus, onSaved }: Props) {
   const today = kampalaToday()
+  const { defaultCurrency } = useAuth()
   const [outcomeKey, setOutcomeKey] = useState<string | null>(null)
   const [temperature, setTemperature] = useState<Temperature | null>(lead.temperature)
   const [nextDate, setNextDate] = useState<string>('')
@@ -60,6 +106,29 @@ export function LogCallForm({ lead, settings, onSaved }: Props) {
   const [newTag, setNewTag] = useState('')
   const [remarks, setRemarks] = useState('')
   const [saving, setSaving] = useState(false)
+  const [addDeal, setAddDeal] = useState(true)
+  const [stageId, setStageId] = useState('')
+  const [dealValue, setDealValue] = useState('')
+  const [pipelines, setPipelines] = useState<{ id: string; name: string; stages: StageOption[] }[] | null>(null)
+
+  // A Hot lead with no deal yet can go on the pipeline.
+  const canAddDeal = temperature === 'hot' && !lead.deal_id
+  useEffect(() => {
+    if (!canAddDeal || pipelines) return
+    let cancelled = false
+    loadStages()
+      .then((r) => {
+        if (cancelled) return
+        setPipelines(r.pipelines)
+        setStageId((cur) => cur || defaultLeadStage(r.pipelines[0]?.stages ?? [])?.id || '')
+      })
+      .catch((err) => console.error('[calls] pipelines failed:', err))
+    return () => {
+      cancelled = true
+    }
+  }, [canAddDeal, pipelines])
+  const willAddDeal = canAddDeal && addDeal && !!stageId
+  const dealChange = lead.deal_id && temperature ? dealStatusForCall(temperature, dealStatus) : null
 
   const outcome = settings.outcomes.find((o) => o.key === outcomeKey) ?? null
 
@@ -105,12 +174,14 @@ export function LogCallForm({ lead, settings, onSaved }: Props) {
           next_call_date: leavesQueue ? null : nextDate || null,
           tags,
           remarks: remarks.trim() || null,
+          pipeline: willAddDeal ? { stage_id: stageId, value: Number(dealValue.replace(/[^\d.]/g, '')) || 0 } : null,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Could not save the call')
       const when = data.lead.next_call_date ? `next call ${formatDay(data.lead.next_call_date, today)}` : 'removed from the queue'
-      toast.success(`Logged — ${when}`)
+      toast.success(`Logged — ${when}${willAddDeal && data.lead.deal_id ? ' · added to the pipeline' : ''}`)
+      if (data.deal_warning) toast.error(`Pipeline not updated: ${data.deal_warning}`)
       onSaved(data.lead, data.log, next)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not save the call')
@@ -154,6 +225,55 @@ export function LogCallForm({ lead, settings, onSaved }: Props) {
           ))}
         </div>
       </section>
+
+      {canAddDeal ? (
+        <section className="rounded-[20px] bg-pastel-lilac p-3.5 text-foreground">
+          <label className="flex cursor-pointer items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-sm font-semibold">
+              <GitBranch className="h-4 w-4" /> Add to pipeline
+            </span>
+            <Switch checked={addDeal} onCheckedChange={setAddDeal} />
+          </label>
+          {addDeal ? (
+            pipelines === null ? (
+              <Loader2 className="mt-3 h-4 w-4 animate-spin text-muted-foreground" />
+            ) : pipelines.length === 0 ? (
+              <p className="mt-2 text-xs text-muted-foreground">No pipeline yet — open Pipelines once to create one.</p>
+            ) : (
+              <div className="mt-3 grid grid-cols-[1fr_8.5rem] gap-2">
+                <select
+                  value={stageId}
+                  onChange={(e) => setStageId(e.target.value)}
+                  aria-label="Pipeline stage"
+                  className="h-11 min-w-0 rounded-[14px] border border-border bg-card px-3 text-sm"
+                >
+                  {pipelines.map((p) => (
+                    <optgroup key={p.id} label={p.name}>
+                      {p.stages.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {pipelines.length > 1 ? `${p.name} → ${s.name}` : s.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <Input
+                  inputMode="decimal"
+                  value={dealValue}
+                  onChange={(e) => setDealValue(e.target.value)}
+                  placeholder={`${defaultCurrency} value`}
+                  aria-label="Deal value (optional)"
+                  className="h-11 rounded-[14px] bg-card"
+                />
+              </div>
+            )
+          ) : null}
+        </section>
+      ) : dealChange ? (
+        <p className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2.5 text-sm text-muted-foreground">
+          <GitBranch className="h-4 w-4 shrink-0" /> {DEAL_STATUS_TEXT[dealChange]}
+        </p>
+      ) : null}
 
       <section>
         <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Next call</h3>

@@ -353,6 +353,14 @@ export interface PipelineStage {
 
 export type DealStatus = 'open' | 'won' | 'lost';
 
+/** The call lead a deal came from / is linked to (migration 042). */
+export interface DealCallLead {
+  id: string;
+  deal_id: string;
+  next_call_date: string | null;
+  temperature: string | null;
+}
+
 export interface Deal {
   id: string;
   user_id: string;
@@ -376,6 +384,7 @@ export interface Deal {
   contact?: Contact;
   stage?: PipelineStage;
   assignee?: Profile;
+  call_lead?: DealCallLead | null;
 }
 
 export type BroadcastStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2, MessageCircle, Phone, Search, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
@@ -35,6 +35,7 @@ export default function CallTodayPage() {
   const [query, setQuery] = useState('')
   const [tempFilter, setTempFilter] = useState<Temperature | 'new' | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
+  const deepLinked = useRef(false)
   const today = kampalaToday()
 
   const load = useCallback(async () => {
@@ -56,6 +57,12 @@ export default function CallTodayPage() {
       if (!data || data.length < PAGE) break
     }
     setLeads(all)
+    // /calls?lead=ID (from a deal on the pipeline) opens that lead once.
+    if (!deepLinked.current) {
+      deepLinked.current = true
+      const linked = new URLSearchParams(window.location.search).get('lead')
+      if (linked && all.some((l) => l.id === linked)) setOpenId(linked)
+    }
     const { count } = await db
       .from('call_logs')
       .select('id', { count: 'exact', head: true })

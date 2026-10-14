@@ -30,7 +30,9 @@ import {
   MessageSquare,
   DollarSign,
   Loader2,
+  Phone,
 } from "lucide-react";
+import { formatDay } from "@/lib/calling/dates";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
@@ -259,6 +261,25 @@ export function DealForm({
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {deal?.call_lead && (
+              <Link
+                href={`/calls?lead=${deal.call_lead.id}`}
+                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm hover:bg-muted/50"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pastel-lilac text-foreground">
+                  <Phone className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">From the call list</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {deal.call_lead.next_call_date
+                      ? `Next call ${formatDay(deal.call_lead.next_call_date)}`
+                      : "No call scheduled"}{" "}
+                    · open in Calls
+                  </span>
+                </span>
+              </Link>
+            )}
             <div className="grid gap-2">
               <Label className="text-muted-foreground">{t("title")}</Label>
               <Input

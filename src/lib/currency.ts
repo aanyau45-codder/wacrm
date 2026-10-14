@@ -28,6 +28,9 @@ export interface CurrencyOption {
  * list to offer more — nothing else needs to change.
  */
 export const CURRENCIES: CurrencyOption[] = [
+  { code: "UGX", label: "Ugandan Shilling", symbol: "USh" },
+  { code: "KES", label: "Kenyan Shilling", symbol: "KSh" },
+  { code: "TZS", label: "Tanzanian Shilling", symbol: "TSh" },
   { code: "USD", label: "US Dollar", symbol: "$" },
   { code: "EUR", label: "Euro", symbol: "€" },
   { code: "GBP", label: "British Pound", symbol: "£" },
@@ -91,7 +94,9 @@ export function formatCurrencyShort(
 ): string {
   const code = currency || DEFAULT_CURRENCY;
   const symbol = CURRENCIES.find((c) => c.code === code)?.symbol ?? `${code} `;
-  return `${symbol}${formatCompactNumber(value)}`;
+  // Letter symbols ("USh", "KSh") read better with a space: "USh 8.4M".
+  const sep = /[A-Za-z]$/.test(symbol) ? " " : "";
+  return `${symbol}${sep}${formatCompactNumber(value)}`;
 }
 
 /**

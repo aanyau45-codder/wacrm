@@ -1,14 +1,17 @@
 'use client'
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { Globe, Loader2, MapPin, MessageCircle, Phone, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronRight, GitBranch, Globe, Loader2, MapPin, MessageCircle, Phone, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { formatCurrency } from '@/lib/currency'
 import { formatCallTime, formatDay, kampalaToday } from '@/lib/calling/dates'
 import { formatPhone, whatsappLink } from '@/lib/calling/phone'
 import type { CallLead, CallLog, CallSettings } from '@/lib/calling/types'
+import type { DealStatus } from '@/types'
 import { LogCallForm } from './log-call-form'
 import { TemperatureBadge } from './temperature-badge'
 
@@ -26,6 +29,15 @@ function subscribeDesktop(cb: () => void) {
   const mq = window.matchMedia(DESKTOP_QUERY)
   mq.addEventListener('change', cb)
   return () => mq.removeEventListener('change', cb)
+}
+
+interface LinkedDeal {
+  id: string
+  value: number
+  currency: string | null
+  status: DealStatus | null
+  stage: { name: string; color: string | null } | null
+  pipeline: { name: string } | null
 }
 
 export function outcomeLabel(settings: CallSettings, key: string | null): string {
@@ -48,6 +60,26 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
   const today = kampalaToday()
 
   const leadId = lead?.id
+  const dealId = lead?.deal_id ?? null
+  const [linked, setLinked] = useState<LinkedDeal | null>(null)
+  const deal = linked && linked.id === dealId ? linked : null
+  useEffect(() => {
+    if (!dealId) return
+    let cancelled = false
+    void createClient()
+      .from('deals')
+      .select('id, value, currency, status, stage:pipeline_stages(name, color), pipeline:pipelines(name)')
+      .eq('id', dealId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled && data) setLinked(data as unknown as LinkedDeal)
+      })
+    return () => {
+      cancelled = true
+    }
+    // Refetch after each save: a call can move the deal.
+  }, [dealId, lead?.updated_at])
+
   useEffect(() => {
     if (!leadId) return
     let cancelled = false
@@ -162,6 +194,26 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
             </SheetHeader>
 
             <div className="space-y-6 p-4 pb-0">
+              {deal ? (
+                <Link
+                  href={`/pipelines?deal=${deal.id}`}
+                  className="flex items-center gap-3 rounded-[20px] border border-border bg-card p-3.5 hover:bg-muted/50"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pastel-lilac text-foreground">
+                    <GitBranch className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold">
+                      {deal.status === 'won' ? 'Won on the pipeline' : deal.status === 'lost' ? 'Lost on the pipeline' : 'On the pipeline'}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {[deal.pipeline?.name, deal.stage?.name].filter(Boolean).join(' → ')}
+                      {deal.value ? ` · ${formatCurrency(deal.value, deal.currency ?? undefined)}` : ''}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              ) : null}
               {lead.do_not_call ? (
                 <p className="rounded-xl bg-zinc-900 p-3 text-sm text-white dark:bg-white dark:text-zinc-900">
                   On the Do Not Call list. It won&apos;t be scheduled or imported again.
@@ -171,6 +223,7 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
                   key={lead.id}
                   lead={lead}
                   settings={settings}
+                  dealStatus={deal?.status ?? null}
                   onSaved={(updated, log, next) => {
                     setHistory((h) => [log, ...(h ?? [])])
                     onSaved(updated, next)
