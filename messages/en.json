@@ -24,6 +24,7 @@
     "title": "Argon CRM",
     "dashboard": "Dashboard",
     "inbox": "Inbox",
+    "calls": "Calls",
     "notifications": "Notifications",
     "contacts": "Contacts",
     "pipelines": "Pipelines",
@@ -49,6 +50,7 @@
   "Header": {
     "dashboard": "Dashboard",
     "inbox": "Inbox",
+    "calls": "Calls",
     "notifications": "Notifications",
     "contacts": "Contacts",
     "pipelines": "Pipelines",
