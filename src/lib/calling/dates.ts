@@ -47,6 +47,11 @@ export function formatDay(date: string, today: string = kampalaToday()): string 
   if (date === today) return 'Today'
   if (date === addDays(today, 1)) return 'Tomorrow'
   if (date === addDays(today, -1)) return 'Yesterday'
+  return formatDate(date)
+}
+
+/** Always the plain date: "Wed 14 Oct". */
+export function formatDate(date: string): string {
   return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', {
     weekday: 'short',
     day: 'numeric',

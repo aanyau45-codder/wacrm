@@ -12,7 +12,7 @@ import { ProgressRing } from '@/components/calling/progress-ring'
 import { CallPanel, outcomeLabel } from '@/components/calling/call-panel'
 import { TemperatureBadge } from '@/components/calling/temperature-badge'
 import { useCallSettings } from '@/components/calling/use-call-settings'
-import { endOfWeek, formatDay, kampalaStartOfDay, kampalaToday } from '@/lib/calling/dates'
+import { endOfWeek, formatDate, formatDay, kampalaStartOfDay, kampalaToday } from '@/lib/calling/dates'
 import { formatPhone, whatsappLink } from '@/lib/calling/phone'
 import { TEMPERATURE_META } from '@/lib/calling/defaults'
 import type { CallLead, Temperature } from '@/lib/calling/types'
@@ -126,7 +126,7 @@ export default function CallTodayPage() {
     <div className="mx-auto max-w-4xl space-y-5">
       <CallsHeader
         title="Call today"
-        kicker={formatDay(today, '')}
+        kicker={formatDate(today)}
         description={
           `${lists.today.length} left today` + (lists.overdue.length ? ` · ${lists.overdue.length} overdue` : '')
         }
