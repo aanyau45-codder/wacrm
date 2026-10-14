@@ -135,7 +135,11 @@
       "thisWeek": "This week:",
       "lastWeek": "Last week:",
       "noReplies": "No replies recorded yet",
-      "noRepliesHint": "This chart fills in as you reply to customer messages."
+      "noRepliesHint": "This chart fills in as you reply to customer messages.",
+      "faster": "{percent}% faster than last week",
+      "slower": "{percent}% slower than last week",
+      "same": "Same as last week",
+      "noSamples": "no replies"
     },
     "emptyState": {
       "title": "Not enough data yet"

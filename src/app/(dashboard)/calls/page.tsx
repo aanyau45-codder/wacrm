@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Loader2, MessageCircle, Phone, Search, Sparkles } from 'lucide-react'
+import { Check, Loader2, MessageCircle, Phone, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
 import { useCan } from '@/hooks/use-can'
 import { Input } from '@/components/ui/input'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { CallsHeader } from '@/components/calling/calls-nav'
 import { ProgressRing } from '@/components/calling/progress-ring'
 import { CallPanel, outcomeLabel } from '@/components/calling/call-panel'
@@ -35,6 +36,7 @@ export default function CallTodayPage() {
   const [query, setQuery] = useState('')
   const [tempFilter, setTempFilter] = useState<Temperature | 'new' | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
+  const [filterOpen, setFilterOpen] = useState(false)
   const deepLinked = useRef(false)
   const today = kampalaToday()
 
@@ -125,7 +127,7 @@ export default function CallTodayPage() {
   const TABS: { key: Tab; label: string; count: number }[] = [
     { key: 'today', label: 'Today', count: lists.today.length },
     { key: 'overdue', label: 'Overdue', count: lists.overdue.length },
-    { key: 'week', label: 'This week', count: lists.week.length },
+    { key: 'week', label: 'Week', count: lists.week.length },
     { key: 'all', label: 'All', count: lists.all.length },
   ]
 
@@ -140,28 +142,27 @@ export default function CallTodayPage() {
         action={<ProgressRing value={doneToday} max={target} />}
       />
 
-      {/* Tabs */}
-      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div className="flex w-max gap-1.5">
+      {/* List tabs + search stay pinned while the list scrolls. Nothing
+          scrolls sideways: the tabs share one full-width bar and the
+          stage filter lives in a bottom sheet. */}
+      <div className="sticky top-0 z-10 -mx-4 space-y-2 bg-background/95 px-4 py-2 backdrop-blur sm:mx-0 sm:px-0">
+        <div className="grid grid-cols-4 gap-1 rounded-full bg-muted p-1">
           {TABS.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
+              aria-pressed={tab === t.key}
               className={cn(
-                'inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors',
-                tab === t.key
-                  ? 'bg-foreground text-background'
-                  : 'border border-border bg-card text-foreground hover:bg-muted/50',
+                'flex h-9 min-w-0 items-center justify-center gap-1 rounded-full px-1 text-[13px] font-semibold transition-colors',
+                tab === t.key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              {t.label}
+              <span className="truncate">{t.label}</span>
               <span
                 className={cn(
-                  'tabular-nums',
-                  t.key === 'overdue' && t.count && tab !== t.key
-                    ? 'rounded-full bg-pastel-coral px-1.5 text-[11px] text-foreground'
-                    : 'opacity-60',
+                  'min-w-4 rounded-full text-[11px] tabular-nums',
+                  t.key === 'overdue' && t.count ? 'bg-pastel-coral px-1 text-pastel-coral-fg' : 'opacity-60',
                 )}
               >
                 {t.count}
@@ -169,38 +170,87 @@ export default function CallTodayPage() {
             </button>
           ))}
         </div>
-      </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
+        <div className="relative">
           <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search name, town, phone…"
-            className="h-11 rounded-[14px] bg-card pl-10"
+            className="h-11 rounded-[14px] bg-card pr-12 pl-10"
           />
+          <button
+            type="button"
+            onClick={() => setFilterOpen(true)}
+            aria-label="Filter by stage"
+            className={cn(
+              'absolute top-1/2 right-1.5 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-[10px] transition-colors',
+              tempFilter ? 'bg-foreground text-background' : 'text-foreground hover:bg-muted',
+            )}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
         </div>
-        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <div className="flex w-max gap-1">
+
+        {tempFilter && (
+          <button
+            type="button"
+            onClick={() => setTempFilter(null)}
+            className={cn(
+              'inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold',
+              TEMPERATURE_META[tempFilter].className,
+            )}
+          >
+            {TEMPERATURE_META[tempFilter].label}
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+
+      <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="rounded-t-[28px] border-border px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+20px)]"
+        >
+          <div className="mx-auto h-1.5 w-10 rounded-full bg-border" />
+          <SheetTitle className="text-lg font-bold tracking-tight">Filter by stage</SheetTitle>
+          <div className="grid grid-cols-3 gap-2">
             {(['new', 'cold', 'warm', 'hot', 'won', 'lost', 'dnc'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setTempFilter((f) => (f === t ? null : t))}
+                aria-pressed={tempFilter === t}
                 className={cn(
-                  'h-7 rounded-full px-2.5 text-xs font-semibold transition-opacity',
+                  'flex h-11 items-center justify-center gap-1.5 rounded-[14px] text-sm font-semibold',
                   TEMPERATURE_META[t].className,
-                  tempFilter && tempFilter !== t ? 'opacity-40' : '',
-                  tempFilter === t ? 'ring-2 ring-foreground' : '',
+                  tempFilter === t && 'ring-2 ring-foreground ring-offset-2 ring-offset-popover',
                 )}
               >
+                {tempFilter === t && <Check className="h-3.5 w-3.5" />}
                 {TEMPERATURE_META[t].label}
               </button>
             ))}
           </div>
-        </div>
-      </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setTempFilter(null)}
+              className="h-12 rounded-full border border-border text-sm font-semibold"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterOpen(false)}
+              className="h-12 rounded-full bg-foreground text-sm font-semibold text-background"
+            >
+              Show leads
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* List */}
       {leads === null ? (

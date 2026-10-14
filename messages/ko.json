@@ -135,7 +135,11 @@
       "thisWeek": "이번 주:",
       "lastWeek": "지난 주:",
       "noReplies": "아직 기록된 응답이 없습니다",
-      "noRepliesHint": "고객 메시지에 답변하면 이 차트가 채워집니다."
+      "noRepliesHint": "고객 메시지에 답변하면 이 차트가 채워집니다.",
+      "faster": "지난주보다 {percent}% 빠름",
+      "slower": "지난주보다 {percent}% 느림",
+      "same": "지난주와 동일",
+      "noSamples": "응답 없음"
     },
     "emptyState": {
       "title": "아직 데이터가 충분하지 않습니다"
