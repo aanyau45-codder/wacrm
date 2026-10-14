@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Flame, Loader2, PhoneCall, PhoneIncoming, Target, Trophy } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
 import { CallsHeader } from '@/components/calling/calls-nav'
@@ -84,21 +84,25 @@ export default function CallResultsPage() {
   const totalLeads = Object.values(stats.byTemperature).reduce((a, b) => a + b, 0)
   const maxDay = Math.max(settings.daily_target, ...stats.perDay.map((d) => d.calls), 1)
   const days = range === 90 ? stats.perDay.slice(-30) : stats.perDay
+  const toGo = Math.max(0, settings.daily_target - stats.callsToday)
+  const headline =
+    toGo === 0 ? 'Target hit today 🎉' : stats.callsToday === 0 ? `${toGo} calls to go today` : `Nice pace, ${toGo} to go`
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <CallsHeader
-        title="Results"
+        kicker={`Results · last ${range} days`}
+        title={headline}
         action={
-          <div className="flex shrink-0 gap-1 rounded-full bg-muted p-1">
+          <div className="flex shrink-0 gap-1">
             {([7, 30, 90] as Range[]).map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => setRange(r)}
                 className={cn(
-                  'h-7 rounded-full px-2.5 text-xs font-semibold',
-                  range === r ? 'bg-background shadow-sm' : 'text-muted-foreground',
+                  'h-8 rounded-full px-3 text-xs font-semibold transition-colors',
+                  range === r ? 'bg-foreground text-background' : 'border border-border bg-card',
                 )}
               >
                 {r}d
@@ -108,43 +112,43 @@ export default function CallResultsPage() {
         }
       />
 
-      {/* Hero: today + week vs targets */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <TargetCard
-          label="Calls today"
-          value={stats.callsToday}
-          target={settings.daily_target}
-          sub={`${stats.queueToday} still queued${stats.overdue ? ` · ${stats.overdue} overdue` : ''}`}
-          tone="bg-pastel-lilac"
-        />
-        <TargetCard
-          label="Calls this week"
-          value={stats.callsWeek}
-          target={settings.weekly_target}
-          sub="Mon – Sun, Kampala time"
-          tone="bg-pastel-peach"
-        />
-      </div>
-
+      {/* 2×2 pastel tiles */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={PhoneCall} label={`Calls · ${range}d`} value={String(stats.callsInRange)} />
-        <Stat icon={PhoneIncoming} label="Pick-up rate" value={pct(stats.pickupRate)} />
-        <Stat icon={Flame} label="Hot leads" value={String(stats.byTemperature.hot)} />
-        <Stat
-          icon={Trophy}
+        <Tile
+          tone="bg-pastel-peach"
+          label="Today"
+          value={String(stats.callsToday)}
+          of={settings.daily_target}
+          sub={`${stats.queueToday} queued${stats.overdue ? ` · ${stats.overdue} overdue` : ''}`}
+        />
+        <Tile
+          tone="bg-pastel-lilac"
+          label="This week"
+          value={String(stats.callsWeek)}
+          of={settings.weekly_target}
+          sub="Mon – Sun"
+        />
+        <Tile
+          tone="bg-pastel-mint"
+          label="Pick-up rate"
+          value={pct(stats.pickupRate)}
+          sub={`of ${stats.callsInRange} calls · ${range}d`}
+        />
+        <Tile
+          tone="bg-pastel-coral"
           label="Hot → Won"
           value={pct(stats.hotToWon)}
-          sub={stats.hotEver ? `${stats.hotWon} of ${stats.hotEver}` : 'no hot leads yet'}
+          sub={stats.hotEver ? `${stats.hotWon} of ${stats.hotEver} hot leads` : 'no hot leads yet'}
         />
       </div>
 
       {/* Calls per day */}
-      <section className="rounded-3xl border border-border bg-card p-4 sm:p-5">
-        <div className="mb-4 flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold">Calls per day</h2>
+      <section className="rounded-[20px] border border-border bg-card p-4 sm:p-5">
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-bold">Calls per day</h2>
           <span className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-foreground" />picked up</span>
-            <span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-foreground/25" />no answer</span>
+            <span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-violet-500" />picked up</span>
+            <span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-pastel-lilac" />no answer</span>
             <span className="flex items-center gap-1"><i className="h-px w-3 border-t border-dashed border-foreground/60" />target</span>
           </span>
         </div>
@@ -155,53 +159,71 @@ export default function CallResultsPage() {
           />
           {days.map((d) => (
             <div key={d.date} className="group relative flex h-full flex-1 flex-col justify-end" title={`${d.date}: ${d.calls} calls, ${d.pickups} picked up`}>
-              <div className="w-full rounded-t-[3px] bg-foreground/25" style={{ height: `${((d.calls - d.pickups) / maxDay) * 100}%` }} />
-              <div className={cn('w-full bg-foreground', d.calls - d.pickups ? '' : 'rounded-t-[3px]')} style={{ height: `${(d.pickups / maxDay) * 100}%` }} />
+              <div
+                className={cn('w-full bg-pastel-lilac', range === 7 ? 'rounded-t-lg' : 'rounded-t-[3px]')}
+                style={{ height: `${((d.calls - d.pickups) / maxDay) * 100}%` }}
+              />
+              <div
+                className={cn('w-full bg-violet-500', d.calls - d.pickups ? '' : range === 7 ? 'rounded-t-lg' : 'rounded-t-[3px]')}
+                style={{ height: `${(d.pickups / maxDay) * 100}%` }}
+              />
             </div>
           ))}
         </div>
-        <div className="mt-1.5 flex justify-between text-[10px] text-muted-foreground">
-          <span>{days[0]?.date.slice(5)}</span>
-          <span>today</span>
-        </div>
+        {range === 7 ? (
+          <div className="mt-1.5 flex gap-[3px] text-[10px] text-muted-foreground">
+            {days.map((d) => (
+              <span key={d.date} className={cn('flex-1 text-center', d.date === today && 'font-bold text-foreground')}>
+                {WEEKDAY[new Date(`${d.date}T12:00:00Z`).getUTCDay()]}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-1.5 flex justify-between text-[10px] text-muted-foreground">
+            <span>{days[0]?.date.slice(5)}</span>
+            <span>today</span>
+          </div>
+        )}
       </section>
 
       <div className="grid gap-3 lg:grid-cols-2">
         {/* Temperature */}
-        <section className="rounded-3xl border border-border bg-card p-4 sm:p-5">
-          <h2 className="mb-3 text-sm font-semibold">Leads by temperature <span className="font-normal text-muted-foreground">· {totalLeads}</span></h2>
-          <div className="mb-4 flex h-3 overflow-hidden rounded-full bg-muted">
+        <section className="rounded-[20px] border border-border bg-card p-4 sm:p-5">
+          <h2 className="mb-3 text-sm font-bold">
+            Leads by temperature <span className="font-normal text-muted-foreground">· {totalLeads}</span>
+          </h2>
+          <div className="mb-4 flex h-3.5 gap-0.5 overflow-hidden rounded-full bg-muted">
             {(['hot', 'warm', 'cold', 'new', 'won', 'lost', 'dnc'] as const).map((t) =>
               stats.byTemperature[t] ? (
                 <div key={t} className={TEMPERATURE_META[t].className} style={{ width: `${(stats.byTemperature[t] / Math.max(1, totalLeads)) * 100}%` }} />
               ) : null,
             )}
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="flex flex-wrap gap-1.5">
             {(['new', 'cold', 'warm', 'hot', 'won', 'lost', 'dnc'] as const).map((t) => (
-              <div key={t} className={cn('rounded-2xl px-3 py-2', TEMPERATURE_META[t].className)}>
-                <p className="text-[11px] font-semibold opacity-80">{TEMPERATURE_META[t].label}</p>
-                <p className="font-heading text-xl font-semibold tabular-nums">{stats.byTemperature[t]}</p>
-              </div>
+              <span key={t} className={cn('inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-semibold', TEMPERATURE_META[t].className)}>
+                {TEMPERATURE_META[t].label}
+                <b className="tabular-nums">{stats.byTemperature[t]}</b>
+              </span>
             ))}
           </div>
         </section>
 
         {/* Outcomes */}
-        <section className="rounded-3xl border border-border bg-card p-4 sm:p-5">
-          <h2 className="mb-3 text-sm font-semibold">Outcomes · {range}d</h2>
+        <section className="rounded-[20px] border border-border bg-card p-4 sm:p-5">
+          <h2 className="mb-3 text-sm font-bold">Outcomes · {range}d</h2>
           {stats.byOutcome.length === 0 ? (
             <p className="text-sm text-muted-foreground">No calls logged yet.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {stats.byOutcome.map((o) => (
                 <li key={o.key} className="text-sm">
                   <div className="flex justify-between gap-2">
                     <span className="truncate">{o.label}</span>
-                    <span className="tabular-nums text-muted-foreground">{o.count}</span>
+                    <span className="font-semibold tabular-nums">{o.count}</span>
                   </div>
-                  <div className="mt-1 h-1.5 rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-foreground/70" style={{ width: `${(o.count / stats.callsInRange) * 100}%` }} />
+                  <div className="mt-1 h-1.5 rounded-full bg-pastel-lilac">
+                    <div className="h-full rounded-full bg-violet-500" style={{ width: `${(o.count / stats.callsInRange) * 100}%` }} />
                   </div>
                 </li>
               ))}
@@ -211,77 +233,52 @@ export default function CallResultsPage() {
       </div>
 
       {/* Industry */}
-      <section className="rounded-3xl border border-border bg-card p-4 sm:p-5">
-        <h2 className="mb-3 text-sm font-semibold">By industry · {range}d</h2>
+      <section className="rounded-[20px] border border-border bg-card p-4 sm:p-5">
+        <h2 className="mb-3 text-sm font-bold">By industry · {range}d</h2>
         {stats.byIndustry.length === 0 ? (
           <p className="text-sm text-muted-foreground">Log calls to compare industries.</p>
         ) : (
-          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <table className="w-full min-w-[30rem] text-sm">
-              <thead>
-                <tr className="text-left text-xs text-muted-foreground">
-                  <th className="pb-2 font-medium">Industry</th>
-                  <th className="pb-2 text-right font-medium">Calls</th>
-                  <th className="pb-2 pl-4 font-medium">Pick-up</th>
-                  <th className="pb-2 text-right font-medium">Interested</th>
-                  <th className="pb-2 text-right font-medium">Won</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {stats.byIndustry.map((r) => (
-                  <tr key={r.industry}>
-                    <td className="py-2 font-medium">{r.industry}</td>
-                    <td className="py-2 text-right tabular-nums">{r.calls}</td>
-                    <td className="py-2 pl-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-16 rounded-full bg-muted">
-                          <div className="h-full rounded-full bg-emerald-500" style={{ width: `${r.pickupRate * 100}%` }} />
-                        </div>
-                        <span className="text-xs tabular-nums text-muted-foreground">{pct(r.pickupRate)}</span>
-                      </div>
-                    </td>
-                    <td className="py-2 text-right tabular-nums">{r.positive}</td>
-                    <td className="py-2 text-right tabular-nums">{r.won}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="divide-y divide-border">
+            {stats.byIndustry.map((r) => (
+              <li key={r.industry} className="flex items-center gap-3 py-2.5 text-sm">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{r.industry}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {r.calls} {r.calls === 1 ? 'call' : 'calls'} · {r.positive} interested · {r.won} won
+                  </p>
+                </div>
+                <div className="flex w-28 shrink-0 items-center gap-2">
+                  <div className="h-1.5 flex-1 rounded-full bg-pastel-mint">
+                    <div className="h-full rounded-full bg-green-600" style={{ width: `${r.pickupRate * 100}%` }} />
+                  </div>
+                  <span className="w-9 text-right text-xs font-semibold tabular-nums">{pct(r.pickupRate)}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>
   )
 }
 
-function TargetCard({ label, value, target, sub, tone }: { label: string; value: number; target: number; sub: string; tone: string }) {
-  const p = Math.min(100, Math.round((value / Math.max(1, target)) * 100))
-  return (
-    <div className={cn('rounded-3xl p-5', tone)}>
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-foreground/70">{label}</p>
-        <Target className="h-4 w-4 text-foreground/60" />
-      </div>
-      <p className="mt-2 font-heading text-4xl leading-none font-semibold tabular-nums">
-        {value}
-        <span className="text-lg font-medium text-foreground/50"> / {target}</span>
-      </p>
-      <div className="mt-4 h-2 rounded-full bg-foreground/10">
-        <div className="h-full rounded-full bg-foreground transition-all" style={{ width: `${p}%` }} />
-      </div>
-      <p className="mt-2 text-xs text-foreground/70">{p}% of target · {sub}</p>
-    </div>
-  )
-}
+const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-function Stat({ icon: Icon, label, value, sub }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; sub?: string }) {
+function Tile({ tone, label, value, of, sub }: { tone: string; label: string; value: string; of?: number; sub: string }) {
+  const p = of ? Math.min(100, Math.round((Number(value) / Math.max(1, of)) * 100)) : null
   return (
-    <div className="rounded-3xl border border-border bg-card p-4">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" />
-        {label}
-      </div>
-      <p className="mt-2 font-heading text-2xl font-semibold tabular-nums">{value}</p>
-      {sub ? <p className="text-[11px] text-muted-foreground">{sub}</p> : null}
+    <div className={cn('flex flex-col rounded-[20px] p-4', tone)}>
+      <p className="text-xs font-semibold text-foreground/70">{label}</p>
+      <p className="mt-1.5 text-3xl leading-none font-extrabold tracking-tight tabular-nums">
+        {value}
+        {of ? <span className="text-base font-semibold text-foreground/50"> /{of}</span> : null}
+      </p>
+      {p !== null ? (
+        <div className="mt-3 h-1.5 rounded-full bg-foreground/10">
+          <div className="h-full rounded-full bg-foreground/80 transition-all" style={{ width: `${p}%` }} />
+        </div>
+      ) : null}
+      <p className="mt-auto pt-2 text-[11px] text-foreground/70">{sub}</p>
     </div>
   )
 }

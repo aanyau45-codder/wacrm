@@ -28,7 +28,7 @@ export const DEFAULT_CALL_SETTINGS: CallSettings = {
 }
 
 export const TEMPERATURE_META: Record<Temperature | 'new', { label: string; className: string }> = {
-  new: { label: 'New', className: 'bg-muted text-muted-foreground' },
+  new: { label: 'New', className: 'bg-pastel-lilac text-violet-900 dark:text-violet-200' },
   cold: { label: 'Cold', className: 'bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300' },
   warm: { label: 'Warm', className: 'bg-pastel-peach text-orange-900 dark:text-orange-200' },
   hot: { label: 'Hot', className: 'bg-pastel-coral text-red-900 dark:text-red-200' },

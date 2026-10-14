@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useCan } from '@/hooks/use-can'
 import { Input } from '@/components/ui/input'
 import { CallsHeader } from '@/components/calling/calls-nav'
+import { ProgressRing } from '@/components/calling/progress-ring'
 import { CallPanel, outcomeLabel } from '@/components/calling/call-panel'
 import { TemperatureBadge } from '@/components/calling/temperature-badge'
 import { useCallSettings } from '@/components/calling/use-call-settings'
@@ -114,7 +115,6 @@ export default function CallTodayPage() {
   }
 
   const target = settings.daily_target
-  const pct = Math.min(100, Math.round((doneToday / Math.max(1, target)) * 100))
   const TABS: { key: Tab; label: string; count: number }[] = [
     { key: 'today', label: 'Today', count: lists.today.length },
     { key: 'overdue', label: 'Overdue', count: lists.overdue.length },
@@ -124,48 +124,37 @@ export default function CallTodayPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <CallsHeader title="Call today" description={formatDay(today, '') + ' · Kampala time'} />
-
-      {/* Progress */}
-      <div className="flex items-center gap-4 rounded-3xl bg-pastel-lilac p-4 sm:p-5">
-        <div
-          className="relative grid h-16 w-16 shrink-0 place-items-center rounded-full"
-          style={{ background: `conic-gradient(var(--foreground) ${pct * 3.6}deg, color-mix(in oklch, var(--foreground) 12%, transparent) 0)` }}
-        >
-          <div className="grid h-12 w-12 place-items-center rounded-full bg-pastel-lilac text-sm font-semibold tabular-nums">
-            {pct}%
-          </div>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-heading text-2xl leading-none font-semibold tabular-nums">
-            {doneToday}
-            <span className="text-base font-medium text-foreground/60"> / {target} calls</span>
-          </p>
-          <p className="mt-1.5 text-sm text-foreground/70">
-            {lists.today.length} left today
-            {lists.overdue.length ? ` · ${lists.overdue.length} overdue` : ''}
-          </p>
-        </div>
-      </div>
+      <CallsHeader
+        title="Call today"
+        kicker={formatDay(today, '')}
+        description={
+          `${lists.today.length} left today` + (lists.overdue.length ? ` · ${lists.overdue.length} overdue` : '')
+        }
+        action={<ProgressRing value={doneToday} max={target} />}
+      />
 
       {/* Tabs */}
       <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div className="flex w-max gap-1 rounded-full bg-muted p-1">
+        <div className="flex w-max gap-1.5">
           {TABS.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
               className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition-colors',
-                tab === t.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground',
+                'inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors',
+                tab === t.key
+                  ? 'bg-foreground text-background'
+                  : 'border border-border bg-card text-foreground hover:bg-muted/50',
               )}
             >
               {t.label}
               <span
                 className={cn(
-                  'rounded-full px-1.5 text-[11px] tabular-nums',
-                  t.key === 'overdue' && t.count ? 'bg-pastel-coral text-foreground' : 'bg-foreground/10',
+                  'tabular-nums',
+                  t.key === 'overdue' && t.count && tab !== t.key
+                    ? 'rounded-full bg-pastel-coral px-1.5 text-[11px] text-foreground'
+                    : 'opacity-60',
                 )}
               >
                 {t.count}
@@ -177,12 +166,12 @@ export default function CallTodayPage() {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search name, town, phone…"
-            className="h-10 rounded-full pl-9"
+            className="h-11 rounded-[14px] bg-card pl-10"
           />
         </div>
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
@@ -262,26 +251,38 @@ function LeadRow({
 }) {
   const wa = whatsappLink(lead.phone)
   const overdue = lead.next_call_date && lead.next_call_date < today
+  const temp = lead.do_not_call ? 'dnc' : (lead.temperature ?? 'new')
+  const where = [lead.town, lead.industry].filter(Boolean).join(' · ')
   return (
-    <li className="flex items-stretch gap-2 rounded-2xl border border-border bg-card p-2 pl-3 transition-colors hover:bg-muted/40">
-      <button type="button" onClick={onOpen} className="min-w-0 flex-1 py-1 text-left">
-        <div className="flex items-center gap-2">
-          <span className="truncate font-semibold">{lead.business_name}</span>
-          <TemperatureBadge value={lead.temperature} />
-        </div>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          {lastOutcome}
-          {lead.attempts ? ` · ${lead.attempts} ${lead.attempts === 1 ? 'call' : 'calls'}` : ''}
-          {lead.town ? ` · ${lead.town}` : ''}
-          {showDate && lead.next_call_date ? (
-            <span className={overdue ? 'font-medium text-red-600 dark:text-red-400' : ''}>
-              {' '}· {formatDay(lead.next_call_date, today)}
-            </span>
-          ) : null}
-        </p>
-        {lead.last_remark ? (
-          <p className="mt-1 line-clamp-1 text-xs text-foreground/80">“{lead.last_remark}”</p>
-        ) : null}
+    <li className="flex items-center gap-3 rounded-[20px] border border-border bg-card p-3 transition-colors hover:bg-muted/30">
+      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+        <span
+          aria-hidden
+          className={cn(
+            'grid h-10 w-10 shrink-0 place-items-center rounded-[14px] text-sm font-bold',
+            TEMPERATURE_META[temp].className,
+          )}
+        >
+          {initials(lead.business_name)}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-bold">{lead.business_name}</span>
+          {where ? <span className="block truncate text-xs text-muted-foreground">{where}</span> : null}
+          <span className="mt-1 flex min-w-0 items-center gap-1.5 text-xs">
+            <TemperatureBadge value={lead.do_not_call ? 'dnc' : lead.temperature} />
+            {showDate && lead.next_call_date && lead.next_call_date !== today ? (
+              <span className={cn('truncate', overdue ? 'font-semibold text-orange-700 dark:text-orange-400' : 'text-muted-foreground')}>
+                {overdue ? 'Due ' : ''}
+                {formatDay(lead.next_call_date, today)}
+              </span>
+            ) : (
+              <span className="truncate text-muted-foreground">
+                {lastOutcome}
+                {lead.attempts ? ` · ${lead.attempts} ${lead.attempts === 1 ? 'call' : 'calls'}` : ''}
+              </span>
+            )}
+          </span>
+        </span>
       </button>
       <div className="flex shrink-0 items-center gap-1.5">
         {wa ? (
@@ -290,7 +291,7 @@ function LeadRow({
             target="_blank"
             rel="noreferrer"
             aria-label="WhatsApp"
-            className="grid h-11 w-11 place-items-center rounded-xl bg-muted text-foreground"
+            className="grid h-10 w-10 place-items-center rounded-full bg-pastel-mint text-emerald-800 dark:text-emerald-200"
           >
             <MessageCircle className="h-4 w-4" />
           </a>
@@ -301,7 +302,7 @@ function LeadRow({
             onClick={onOpen}
             aria-label={`Call ${formatPhone(lead.phone)}`}
             title={formatPhone(lead.phone)}
-            className="grid h-11 w-11 place-items-center rounded-xl bg-emerald-600 text-white"
+            className="grid h-10 w-10 place-items-center rounded-full bg-green-600 text-white shadow-sm"
           >
             <Phone className="h-4 w-4" />
           </a>
@@ -309,6 +310,11 @@ function LeadRow({
       </div>
     </li>
   )
+}
+
+function initials(name: string) {
+  const words = name.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean)
+  return ((words[0]?.[0] ?? '?') + (words[1]?.[0] ?? '')).toUpperCase()
 }
 
 function EmptyState() {

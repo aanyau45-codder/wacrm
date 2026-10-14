@@ -163,3 +163,28 @@ export function googlePlacesSource(apiKey: string): LeadSource {
     },
   }
 }
+
+/** One tiny search to check a key works before it is saved. */
+export async function validateGooglePlacesKey(apiKey: string): Promise<void> {
+  let res: Response
+  try {
+    res = await fetch(SEARCH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'places.id',
+      },
+      body: JSON.stringify({ textQuery: 'pharmacy in Kampala, Uganda', regionCode: 'UG', pageSize: 1 }),
+      signal: AbortSignal.timeout(15_000),
+    })
+  } catch {
+    throw new LeadSourceError('Could not reach Google Places. Try again.')
+  }
+  if (res.ok) return
+  const data = (await res.json().catch(() => ({}))) as SearchResponse
+  throw new LeadSourceError(
+    `Google rejected this key (${res.status})${data.error?.message ? `: ${data.error.message}` : ''}`,
+    400,
+  )
+}

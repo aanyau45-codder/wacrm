@@ -88,21 +88,22 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
           <>
             <SheetHeader className="space-y-2 border-b border-border p-4 pr-12">
               <div className="flex flex-wrap items-center gap-2">
-                <TemperatureBadge value={lead.temperature} />
+                <TemperatureBadge value={lead.do_not_call ? 'dnc' : lead.temperature} />
                 {lead.industry ? <span className="text-xs text-muted-foreground">{lead.industry}</span> : null}
                 {lead.town ? <span className="text-xs text-muted-foreground">· {lead.town}</span> : null}
               </div>
-              <SheetTitle className="font-heading text-xl">{lead.business_name}</SheetTitle>
+              <SheetTitle className="text-2xl font-extrabold tracking-tight">{lead.business_name}</SheetTitle>
               <SheetDescription>
                 {lead.contact_person ? `${lead.contact_person} · ` : ''}
                 {lead.attempts} {lead.attempts === 1 ? 'call' : 'calls'}
                 {lead.next_call_date ? ` · next ${formatDay(lead.next_call_date, today)}` : ' · not queued'}
+                {lead.last_remark ? <span className="italic"> · “{lead.last_remark}”</span> : null}
               </SheetDescription>
               <div className="flex flex-wrap gap-2 pt-1">
                 {lead.phone && !lead.do_not_call ? (
                   <a
                     href={`tel:${lead.phone}`}
-                    className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
+                    className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-green-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-green-700"
                   >
                     <Phone className="h-4 w-4" />
                     {formatPhone(lead.phone)}
@@ -113,7 +114,7 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
                     href={wa}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-muted px-4 text-sm font-medium"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-pastel-mint px-4 text-sm font-medium text-emerald-800 dark:text-emerald-200"
                     aria-label="WhatsApp"
                   >
                     <MessageCircle className="h-4 w-4" />
@@ -124,7 +125,7 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
                     href={lead.maps_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-11 items-center justify-center rounded-xl bg-muted px-4"
+                    className="inline-flex h-11 items-center justify-center rounded-2xl border border-border bg-card px-4"
                     aria-label="Google Maps"
                   >
                     <MapPin className="h-4 w-4" />
@@ -135,7 +136,7 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
                     href={lead.website}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-11 items-center justify-center rounded-xl bg-muted px-4"
+                    className="inline-flex h-11 items-center justify-center rounded-2xl border border-border bg-card px-4"
                     aria-label="Website"
                   >
                     <Globe className="h-4 w-4" />
@@ -189,7 +190,7 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
               ) : (
                 <ol className="space-y-2">
                   {history.map((h) => (
-                    <li key={h.id} className="rounded-xl border border-border p-3">
+                    <li key={h.id} className="rounded-2xl border border-border bg-card p-3">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-sm font-medium">{outcomeLabel(settings, h.outcome)}</span>
                         <TemperatureBadge value={h.temperature_after} />

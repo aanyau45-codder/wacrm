@@ -79,7 +79,8 @@ export function LogCallForm({ lead, settings, onSaved }: Props) {
     return applyCall(lead, { outcome, temperature, nextCallDate: nextDate || null }, settings, today)
   }, [lead, outcome, temperature, nextDate, settings, today])
 
-  const parked = outcome ? suggestForOutcome(lead, outcome, settings, today).parked : false
+  const suggestion = outcome ? suggestForOutcome(lead, outcome, settings, today) : null
+  const parked = suggestion?.parked ?? false
   const leavesQueue = preview ? preview.next_call_date === null : false
 
   function addTag() {
@@ -142,9 +143,10 @@ export function LogCallForm({ lead, settings, onSaved }: Props) {
               type="button"
               onClick={() => setTemperature(t)}
               className={cn(
-                'h-10 rounded-xl text-[13px] font-semibold transition-all',
-                TEMPERATURE_META[t].className,
-                temperature === t ? 'ring-2 ring-foreground ring-offset-2 ring-offset-popover' : 'opacity-60 hover:opacity-100',
+                'h-11 rounded-2xl text-[13px] font-semibold transition-all',
+                temperature === t
+                  ? cn(TEMPERATURE_META[t].className, 'ring-2 ring-foreground/80')
+                  : 'border border-border bg-card text-foreground hover:bg-muted/50',
               )}
             >
               {TEMPERATURE_META[t].label}
@@ -170,10 +172,11 @@ export function LogCallForm({ lead, settings, onSaved }: Props) {
               value={nextDate}
               min={today}
               onChange={(e) => setNextDate(e.target.value)}
-              className="h-10 max-w-[11rem]"
+              className="h-11 max-w-[11rem] rounded-[14px] bg-card"
             />
             <span className="text-sm text-muted-foreground">
               {nextDate ? formatDay(nextDate, today) : outcome ? '' : 'Pick an outcome first'}
+              {nextDate && nextDate === suggestion?.nextCallDate ? <span className="ml-1.5 text-xs text-violet-600 dark:text-violet-300">suggested</span> : null}
             </span>
           </div>
         )}
@@ -227,16 +230,17 @@ export function LogCallForm({ lead, settings, onSaved }: Props) {
           onChange={(e) => setRemarks(e.target.value)}
           placeholder="What did they say?"
           rows={2}
+          className="rounded-[14px] bg-card"
         />
       </section>
 
       <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-border bg-popover px-4 py-3">
-        <Button variant="outline" className="h-11 flex-1" disabled={saving || !outcome} onClick={() => save(false)}>
+        <Button variant="outline" className="h-12 flex-1 rounded-2xl" disabled={saving || !outcome} onClick={() => save(false)}>
           Save
         </Button>
-        <Button className="h-11 flex-[2]" disabled={saving || !outcome} onClick={() => save(true)}>
+        <Button className="h-12 flex-[2] rounded-2xl bg-foreground text-background hover:bg-foreground/90" disabled={saving || !outcome} onClick={() => save(true)}>
           {saving ? <Loader2 className="animate-spin" /> : null}
-          Save & next lead
+          Save & next →
         </Button>
       </div>
     </div>

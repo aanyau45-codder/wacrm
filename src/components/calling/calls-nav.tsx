@@ -28,8 +28,8 @@ export function CallsNav() {
               className={cn(
                 'inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition-colors',
                 active
-                  ? 'bg-foreground text-background'
-                  : 'bg-muted text-muted-foreground hover:text-foreground',
+                  ? 'bg-pastel-lilac text-violet-900 dark:text-violet-100'
+                  : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
               )}
             >
               <Icon className="h-4 w-4" />
@@ -42,12 +42,23 @@ export function CallsNav() {
   )
 }
 
-export function CallsHeader({ title, description, action }: { title: string; description?: string; action?: React.ReactNode }) {
+export function CallsHeader({
+  title,
+  kicker,
+  description,
+  action,
+}: {
+  title: string
+  kicker?: string
+  description?: string
+  action?: React.ReactNode
+}) {
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+          {kicker ? <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{kicker}</p> : null}
+          <h1 className="text-[28px] leading-tight font-extrabold tracking-tight text-foreground">{title}</h1>
           {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
         </div>
         {action}
