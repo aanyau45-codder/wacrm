@@ -266,7 +266,7 @@ export function DealForm({
                 href={`/calls?lead=${deal.call_lead.id}`}
                 className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm hover:bg-muted/50"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pastel-lilac text-foreground">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pastel-lilac text-pastel-lilac-fg">
                   <Phone className="h-4 w-4" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -470,7 +470,7 @@ export function DealForm({
             {deal &&
               (confirmDelete ? (
                 <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs">
-                  <span className="text-red-300">{t("deletePrompt")}</span>
+                  <span className="text-red-700 dark:text-red-300">{t("deletePrompt")}</span>
                   <div className="flex gap-1">
                     <button
                       type="button"
@@ -494,7 +494,7 @@ export function DealForm({
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(true)}
-                  className="mt-3 flex w-full items-center justify-center gap-1 text-xs text-red-400 hover:text-red-300"
+                  className="mt-3 flex w-full items-center justify-center gap-1 text-xs text-red-700 dark:text-red-400 hover:text-red-300"
                 >
                   <Trash2 className="h-3 w-3" />
                   {t("deleteDeal")}

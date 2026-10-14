@@ -39,7 +39,7 @@ export function AuthHeader({ title, sub }: { title: string; sub?: ReactNode }) {
   return (
     <div className="flex flex-col items-center text-center">
       <Sprig className="mt-2 h-16 w-32" />
-      <h1 className="mt-4 text-[26px] leading-tight font-semibold text-foreground">
+      <h1 className="mt-4 text-[28px] leading-tight font-extrabold tracking-[-0.02em] text-foreground">
         {title}
       </h1>
       {sub && <p className="mt-2 text-sm text-muted-foreground">{sub}</p>}

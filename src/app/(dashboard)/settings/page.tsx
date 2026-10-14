@@ -3,6 +3,7 @@
 import { Suspense, useMemo, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { ChevronLeft } from 'lucide-react';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from '@/hooks/use-theme';
@@ -87,8 +88,8 @@ function SettingsPageInner() {
 
   return (
     <div>
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+      <div className={section === 'overview' ? undefined : 'hidden lg:block'}>
+        <h1 className="text-[28px] leading-[1.1] font-extrabold tracking-[-0.02em] text-foreground sm:text-[30px]">
           {t('pageTitle')}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -96,8 +97,22 @@ function SettingsPageInner() {
         </p>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[236px_minmax(0,1fr)] lg:items-start">
-        <SettingsRail active={section} onSelect={go} hints={hints} />
+      {/* Phones: a section opens full-width with a way back to the menu. */}
+      {section !== 'overview' ? (
+        <button
+          type="button"
+          onClick={() => go('overview')}
+          className="-ml-1 inline-flex items-center gap-1 rounded-xl py-1 pr-2 text-sm font-semibold text-muted-foreground hover:text-foreground lg:hidden"
+        >
+          <ChevronLeft className="size-4" />
+          {t('pageTitle')}
+        </button>
+      ) : null}
+
+      <div className="mt-4 grid gap-6 lg:mt-6 lg:grid-cols-[236px_minmax(0,1fr)] lg:items-start">
+        <div className="order-2 lg:order-none">
+          <SettingsRail active={section} onSelect={go} hints={hints} />
+        </div>
         <div className="min-w-0">{panel[section]}</div>
       </div>
     </div>

@@ -65,7 +65,7 @@ const STATUS_META: Record<
 > = {
   active: {
     label: "Active",
-    classes: "border-emerald-600/40 bg-emerald-500/10 text-emerald-300",
+    classes: "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
     icon: PlayCircle,
   },
   completed: {
@@ -75,7 +75,7 @@ const STATUS_META: Record<
   },
   handed_off: {
     label: "Handed off",
-    classes: "border-amber-600/40 bg-amber-500/10 text-amber-300",
+    classes: "border-amber-600/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
     icon: UserPlus,
   },
   timed_out: {
@@ -90,7 +90,7 @@ const STATUS_META: Record<
   },
   failed: {
     label: "Failed",
-    classes: "border-red-600/40 bg-red-500/10 text-red-300",
+    classes: "border-red-600/40 bg-red-500/10 text-red-700 dark:text-red-300",
     icon: CircleAlert,
   },
 };
@@ -184,13 +184,13 @@ export default function FlowRunsPage() {
         <ArrowLeft className="h-3 w-3" />
         {flow.name}
       </button>
-      <h1 className="text-xl font-semibold text-foreground">{t("title")}</h1>
+      <h1 className="text-[28px] leading-[1.1] font-extrabold tracking-[-0.02em] text-foreground sm:text-[30px]">{t("title")}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {t("description")}
       </p>
 
       {runs.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-dashed border-border bg-card/50 px-6 py-12 text-center text-sm text-muted-foreground">
+        <div className="mt-6 rounded-[22px] border border-dashed border-border bg-card/50 px-6 py-12 text-center text-sm text-muted-foreground">
           {t("emptyState")}
         </div>
       ) : (
@@ -234,7 +234,7 @@ function RunCard({
       })
     : null;
   return (
-    <div className="rounded-lg border border-border bg-card">
+    <div className="rounded-2xl border border-border bg-card">
       <button
         type="button"
         onClick={onToggle}
@@ -309,15 +309,15 @@ function RunCard({
 }
 
 const EVENT_COLOR: Record<string, string> = {
-  started: "text-emerald-300",
+  started: "text-emerald-700 dark:text-emerald-300",
   node_entered: "text-muted-foreground",
-  message_sent: "text-sky-300",
+  message_sent: "text-sky-700 dark:text-sky-300",
   reply_received: "text-primary",
-  fallback_fired: "text-amber-300",
-  handoff: "text-amber-300",
+  fallback_fired: "text-amber-700 dark:text-amber-300",
+  handoff: "text-amber-700 dark:text-amber-300",
   timeout: "text-muted-foreground",
-  error: "text-red-300",
-  completed: "text-emerald-300",
+  error: "text-red-700 dark:text-red-300",
+  completed: "text-emerald-700 dark:text-emerald-300",
 };
 
 function EventLine({ ev }: { ev: EventRow }) {

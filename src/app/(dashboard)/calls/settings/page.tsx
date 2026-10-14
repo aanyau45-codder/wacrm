@@ -67,7 +67,7 @@ export default function CallSettingsPage() {
       <CallsHeader title="Calling settings" description="When you call, how many, and what happens after each outcome." />
 
       <fieldset disabled={!canEdit} className="space-y-5">
-        <section className="space-y-4 rounded-3xl border border-border bg-card p-4 sm:p-6">
+        <section className="space-y-4 rounded-[22px] border border-border bg-card p-4 sm:p-6">
           <h2 className="font-semibold">Schedule</h2>
           <div>
             <p className="mb-2 text-sm text-muted-foreground">Calling days</p>
@@ -111,7 +111,7 @@ export default function CallSettingsPage() {
           </p>
         </section>
 
-        <section className="space-y-4 rounded-3xl border border-border bg-card p-4 sm:p-6">
+        <section className="space-y-4 rounded-[22px] border border-border bg-card p-4 sm:p-6">
           <h2 className="font-semibold">Unanswered calls</h2>
           <div className="grid grid-cols-2 gap-3">
             <label className="space-y-1 text-sm">
@@ -128,7 +128,7 @@ export default function CallSettingsPage() {
           </p>
         </section>
 
-        <section className="space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-6">
+        <section className="space-y-3 rounded-[22px] border border-border bg-card p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Outcomes</h2>
             <Button type="button" variant="ghost" size="sm" onClick={() => set('outcomes', DEFAULT_OUTCOMES)}>
@@ -219,7 +219,7 @@ export default function CallSettingsPage() {
           </Button>
         </section>
 
-        <section className="space-y-3 rounded-3xl border border-border bg-card p-4 sm:p-6">
+        <section className="space-y-3 rounded-[22px] border border-border bg-card p-4 sm:p-6">
           <h2 className="font-semibold">Extra tags</h2>
           <div className="flex flex-wrap gap-1.5">
             {draft.extra_tags.map((t) => (

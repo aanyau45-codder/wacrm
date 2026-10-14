@@ -261,7 +261,7 @@ function LeadRow({
   const temp = lead.do_not_call ? 'dnc' : (lead.temperature ?? 'new')
   const where = [lead.town, lead.industry].filter(Boolean).join(' · ')
   return (
-    <li className="flex items-center gap-3 rounded-[20px] border border-border bg-card p-3 transition-colors hover:bg-muted/30">
+    <li className="flex items-center gap-3 rounded-[22px] border border-border bg-card p-3 transition-colors hover:bg-muted/30">
       <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3 text-left">
         <span
           aria-hidden
@@ -298,7 +298,7 @@ function LeadRow({
             target="_blank"
             rel="noreferrer"
             aria-label="WhatsApp"
-            className="grid h-10 w-10 place-items-center rounded-full bg-pastel-mint text-emerald-800 dark:text-emerald-200"
+            className="grid h-10 w-10 place-items-center rounded-full bg-pastel-mint text-pastel-mint-fg"
           >
             <MessageCircle className="h-4 w-4" />
           </a>

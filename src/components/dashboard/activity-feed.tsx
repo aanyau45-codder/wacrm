@@ -31,11 +31,11 @@ interface KindTheme {
 }
 
 const KIND_THEME: Record<ActivityKind, KindTheme> = {
-  message: { icon: MessageSquare, badge: 'bg-blue-500/10 text-blue-400' },
-  contact: { icon: UserPlus, badge: 'bg-primary/10 text-primary' },
-  deal: { icon: Briefcase, badge: 'bg-primary/10 text-primary' },
-  broadcast: { icon: Radio, badge: 'bg-amber-500/10 text-amber-400' },
-  automation: { icon: Zap, badge: 'bg-rose-500/10 text-rose-400' },
+  message: { icon: MessageSquare, badge: 'bg-pastel-sky text-pastel-sky-fg' },
+  contact: { icon: UserPlus, badge: 'bg-pastel-lilac text-pastel-lilac-fg' },
+  deal: { icon: Briefcase, badge: 'bg-pastel-mint text-pastel-mint-fg' },
+  broadcast: { icon: Radio, badge: 'bg-pastel-peach text-pastel-peach-fg' },
+  automation: { icon: Zap, badge: 'bg-rose-500/10 text-rose-700 dark:text-rose-400' },
 }
 
 import { useTranslations } from 'next-intl'
@@ -57,12 +57,12 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
     i === 0 || totalLoaded > PAGE_SIZES[i - 1]
 
   return (
-    <section className="rounded-xl border border-border bg-card">
+    <section className="rounded-[22px] border border-border bg-card">
       <header className="flex items-center justify-between border-b border-border px-5 py-4">
-        <h2 className="text-sm font-semibold text-foreground">{t('title')}</h2>
+        <h2 className="text-base font-bold tracking-tight text-foreground">{t('title')}</h2>
         <Link
           href="/inbox"
-          className="text-xs font-medium text-primary hover:text-primary/80"
+          className="text-xs font-semibold text-brand hover:opacity-80"
         >
           {t('viewAll')}
         </Link>

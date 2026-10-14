@@ -227,7 +227,7 @@ export function LogCallForm({ lead, settings, dealStatus, onSaved }: Props) {
       </section>
 
       {canAddDeal ? (
-        <section className="rounded-[20px] bg-pastel-lilac p-3.5 text-foreground">
+        <section className="rounded-[20px] bg-pastel-lilac p-3.5 text-pastel-lilac-fg">
           <label className="flex cursor-pointer items-center justify-between gap-3">
             <span className="flex items-center gap-2 text-sm font-semibold">
               <GitBranch className="h-4 w-4" /> Add to pipeline

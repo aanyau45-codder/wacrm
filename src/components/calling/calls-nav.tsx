@@ -6,38 +6,37 @@ import { BarChart3, FileUp, PhoneCall, Search, Settings2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const ITEMS = [
-  { href: '/calls', label: 'Call today', icon: PhoneCall },
-  { href: '/calls/find', label: 'Find leads', icon: Search },
-  { href: '/calls/import', label: 'Import', icon: FileUp },
-  { href: '/calls/dashboard', label: 'Results', icon: BarChart3 },
-  { href: '/calls/settings', label: 'Settings', icon: Settings2 },
+  { href: '/calls', label: 'Call today', short: 'Today', icon: PhoneCall },
+  { href: '/calls/find', label: 'Find leads', short: 'Find', icon: Search },
+  { href: '/calls/import', label: 'Import', short: 'Import', icon: FileUp },
+  { href: '/calls/dashboard', label: 'Results', short: 'Results', icon: BarChart3 },
+  { href: '/calls/settings', label: 'Settings', short: 'Settings', icon: Settings2 },
 ]
 
-/** Sub-navigation shared by every /calls page (scrolls sideways on phones). */
+/** Sub-navigation shared by every /calls page: equal-width tabs, never scrolls. */
 export function CallsNav() {
   const pathname = usePathname()
   return (
-    <nav className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-      <div className="flex w-max gap-2">
-        {ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = href === '/calls' ? pathname === href : pathname.startsWith(href)
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition-colors',
-                active
-                  ? 'bg-pastel-lilac text-violet-900 dark:text-violet-100'
-                  : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </Link>
-          )
-        })}
-      </div>
+    <nav className="flex border-b border-border">
+      {ITEMS.map(({ href, label, short, icon: Icon }) => {
+        const active = href === '/calls' ? pathname === href : pathname.startsWith(href)
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? 'page' : undefined}
+            className={cn(
+              'relative flex min-w-0 flex-1 items-center justify-center gap-1.5 py-3 text-[13px] font-semibold transition-colors sm:text-sm',
+              active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Icon className="hidden h-4 w-4 shrink-0 sm:block" />
+            <span className="truncate sm:hidden">{short}</span>
+            <span className="hidden truncate sm:inline">{label}</span>
+            {active ? <span className="absolute inset-x-[22%] -bottom-px h-[3px] rounded-full bg-foreground" /> : null}
+          </Link>
+        )
+      })}
     </nav>
   )
 }
@@ -54,12 +53,12 @@ export function CallsHeader({
   action?: React.ReactNode
 }) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          {kicker ? <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{kicker}</p> : null}
-          <h1 className="text-[28px] leading-tight font-extrabold tracking-tight text-foreground">{title}</h1>
-          {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+          {kicker ? <p className="text-xs font-bold tracking-[0.06em] text-muted-foreground uppercase">{kicker}</p> : null}
+          <h1 className="mt-1 text-[28px] leading-[1.1] font-extrabold tracking-[-0.02em] text-foreground sm:text-[30px]">{title}</h1>
+          {description ? <p className="mt-1.5 text-sm text-muted-foreground">{description}</p> : null}
         </div>
         {action}
       </div>

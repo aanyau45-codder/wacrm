@@ -48,6 +48,7 @@ export function AppUpdateBanner() {
       dismissed = sessionStorage.getItem(DISMISS_KEY) === "1";
     } catch {}
     if (version !== null && version < LATEST_APK.versionCode && !dismissed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShow(true);
     }
   }, []);
@@ -62,7 +63,7 @@ export function AppUpdateBanner() {
   };
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-[60] mx-auto flex max-w-md items-center gap-3 rounded-3xl bg-pastel-lilac p-3 pl-4 shadow-[0_12px_40px_-12px_rgba(30,28,70,0.35)]">
+    <div className="fixed inset-x-3 bottom-[84px] z-[60] lg:bottom-3 mx-auto flex max-w-md items-center gap-3 rounded-3xl bg-pastel-lilac p-3 pl-4 shadow-[0_12px_40px_-12px_rgba(30,28,70,0.35)]">
       <div className="min-w-0 flex-1">
         <p className="font-heading text-sm font-semibold text-foreground">
           New app version

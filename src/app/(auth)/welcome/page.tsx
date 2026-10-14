@@ -19,7 +19,7 @@ export default async function WelcomePage() {
     <AuthScreen>
       <div className="flex flex-1 flex-col items-center text-center">
         <ArgonLogo size={34} className="mt-4" />
-        <h1 className="mt-8 text-[30px] leading-tight font-semibold text-foreground">
+        <h1 className="mt-8 text-[32px] leading-tight font-extrabold tracking-[-0.02em] text-foreground">
           {t("title")}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">{t("tagline")}</p>

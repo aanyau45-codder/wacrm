@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
+import { ChevronRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -11,16 +12,11 @@ import {
   type SettingsSection,
 } from './settings-sections';
 
-// Width at/above which the rail is a vertical column (already in view, so
-// no auto-scroll needed). Mirrors the Tailwind `lg:` breakpoint that
-// drives the row→column switch in the markup below — keep the two in sync.
-const RAIL_DESKTOP_MIN_PX = 1024;
-
 /**
- * The settings left rail — grouped, vertical on desktop and a
- * horizontal scroller on narrow screens (mirrors the mockup's ≤920px
- * behaviour). The active item auto-scrolls into view when the rail is
- * horizontal so a deep-linked section is never off-screen.
+ * The settings left rail — a grouped vertical column on desktop. On
+ * phones it never scrolls sideways: it renders as grouped list cards
+ * under the Overview, and is hidden while a section is open (the page
+ * shows a back link instead).
  */
 export function SettingsRail({
   active,
@@ -32,27 +28,13 @@ export function SettingsRail({
   hints?: Partial<Record<SettingsSection, ReactNode>>;
 }) {
   const t = useTranslations('Settings');
-  const activeRef = useRef<HTMLButtonElement>(null);
-
-  // When horizontal (mobile), keep the active chip in view. On desktop
-  // the rail is a static column, so skip.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia(`(min-width: ${RAIL_DESKTOP_MIN_PX}px)`).matches) return;
-    activeRef.current?.scrollIntoView({
-      inline: 'center',
-      block: 'nearest',
-      behavior: 'smooth',
-    });
-  }, [active]);
 
   return (
     <nav
       aria-label="Settings sections"
       className={cn(
-        'flex gap-1 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-        'border-b border-border',
-        'lg:sticky lg:top-0 lg:flex-col lg:overflow-visible lg:border-b-0 lg:pb-0',
+        'flex-col gap-4 lg:sticky lg:top-0 lg:flex lg:gap-0',
+        active === 'overview' ? 'flex' : 'hidden',
       )}
     >
       {RAIL_GROUPS.map(({ label, group }) => {
@@ -60,15 +42,13 @@ export function SettingsRail({
           (s) => SECTION_META[s].group === group,
         );
         return (
-          <div
-            key={group}
-            className="flex shrink-0 gap-1 lg:flex-col lg:gap-0.5"
-          >
+          <div key={group} className={cn(group === 'top' && 'hidden lg:block')}>
             {label ? (
-              <div className="hidden px-3 pt-3.5 pb-1.5 text-[11px] font-semibold tracking-[0.09em] text-muted-foreground uppercase lg:block">
+              <div className="px-1 pb-2 text-xs font-bold tracking-[0.06em] text-muted-foreground uppercase lg:px-3 lg:pt-4 lg:pb-1.5 lg:text-[11px]">
                 {t(`groups.${group}`)}
               </div>
             ) : null}
+            <div className="flex flex-col gap-0.5 rounded-[22px] border border-border bg-card p-1.5 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0">
             {items.map((s) => {
               const meta = SECTION_META[s];
               const Icon = meta.icon;
@@ -76,33 +56,33 @@ export function SettingsRail({
               return (
                 <button
                   key={s}
-                  ref={isActive ? activeRef : undefined}
                   type="button"
                   onClick={() => onSelect(s)}
                   aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium whitespace-nowrap transition-colors',
-                    'lg:w-full',
+                    'flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-[15px] font-semibold whitespace-nowrap transition-colors lg:py-2 lg:text-sm',
                     isActive
-                      ? 'bg-primary-soft text-primary'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                      ? 'bg-foreground text-background'
+                      : 'text-foreground hover:bg-muted lg:text-muted-foreground lg:hover:text-foreground',
                   )}
                 >
-                  <Icon className="size-4 shrink-0" />
+                  <Icon className="size-[18px] shrink-0 lg:size-4" />
                   <span className="flex-1">{t(`sections.${s}`)}</span>
                   {hints?.[s] != null ? (
                     <span
                       className={cn(
-                        'hidden items-center gap-1.5 text-xs lg:inline-flex',
-                        isActive ? 'text-primary' : 'text-muted-foreground',
+                        'inline-flex items-center gap-1.5 text-xs font-medium',
+                        isActive ? 'text-background/70' : 'text-muted-foreground',
                       )}
                     >
                       {hints[s]}
                     </span>
                   ) : null}
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground lg:hidden" />
                 </button>
               );
             })}
+            </div>
           </div>
         );
       })}

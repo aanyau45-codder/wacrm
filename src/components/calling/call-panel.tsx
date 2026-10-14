@@ -146,7 +146,7 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
                     href={wa}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-pastel-mint px-4 text-sm font-medium text-emerald-800 dark:text-emerald-200"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-pastel-mint px-4 text-sm font-semibold text-pastel-mint-fg"
                     aria-label="WhatsApp"
                   >
                     <MessageCircle className="h-4 w-4" />
@@ -197,9 +197,9 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
               {deal ? (
                 <Link
                   href={`/pipelines?deal=${deal.id}`}
-                  className="flex items-center gap-3 rounded-[20px] border border-border bg-card p-3.5 hover:bg-muted/50"
+                  className="flex items-center gap-3 rounded-[22px] border border-border bg-card p-3.5 hover:bg-muted/50"
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pastel-lilac text-foreground">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pastel-lilac text-pastel-lilac-fg">
                     <GitBranch className="h-4 w-4" />
                   </span>
                   <span className="min-w-0 flex-1">

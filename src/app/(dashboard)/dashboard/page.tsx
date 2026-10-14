@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
-import { formatCurrency } from '@/lib/currency'
+import { formatCurrencyShort } from '@/lib/currency'
 import {
   MessageSquare,
   UserPlus,
@@ -33,14 +33,22 @@ import { ConversationsChart } from '@/components/dashboard/conversations-chart'
 import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
 import { ActivityFeed } from '@/components/dashboard/activity-feed'
+import { UpNext } from '@/components/dashboard/up-next'
+import { PageHeader } from '@/components/layout/page-header'
 
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 type RangeDays = 7 | 30 | 90
 
 export default function DashboardPage() {
   const t = useTranslations('Dashboard.page')
-  const { defaultCurrency } = useAuth()
+  const { defaultCurrency, profile } = useAuth()
+  const locale = useLocale()
+  const now = new Date()
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hour12: false, timeZone: 'Africa/Kampala' }).format(now))
+  const greetKey = hour < 12 ? 'greetMorning' : hour < 17 ? 'greetAfternoon' : 'greetEvening'
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0] || profile?.email?.split('@')[0] || ''
+  const dateLabel = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'Africa/Kampala' }).format(now)
   const [metrics, setMetrics] = useState<MetricsBundle | null>(null)
   const [metricsLoading, setMetricsLoading] = useState(true)
 
@@ -122,17 +130,16 @@ export default function DashboardPage() {
   )
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t('description')}
-        </p>
-      </div>
+    <div className="space-y-4 sm:space-y-5">
+      <PageHeader
+        className="mb-2"
+        kicker={dateLabel}
+        title={firstName ? t(greetKey, { name: firstName }) : t('title')}
+        subtitle={t('description')}
+      />
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Metric tiles — 2×2 on phones */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {metricsLoading || !metrics ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
         ) : (
@@ -168,7 +175,7 @@ export default function DashboardPage() {
             />
             <MetricCard
               title={t('openDealsValue')}
-              value={formatCurrency(metrics.openDealsValue, defaultCurrency)}
+              value={formatCurrencyShort(metrics.openDealsValue, defaultCurrency)}
               icon={DollarSign}
               tone="mint"
               subtitle={t('openDeals', { count: metrics.openDealsCount })}
@@ -192,8 +199,14 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Quick actions */}
-      <QuickActions />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="lg:col-span-2">
+          <UpNext />
+        </div>
+        <div className="lg:col-span-3">
+          <QuickActions />
+        </div>
+      </div>
 
       {/* Charts row */}
       {/* items-stretch (the grid default) stretches the two columns to

@@ -17,6 +17,15 @@ import { SECTION_META, type SettingsSection } from './settings-sections';
 import { SettingsChip, StatusDot } from './settings-chip';
 import { ROLE_META } from './role-meta';
 
+// Airy pastel bubble per overview tile.
+const TILE_TONE: Partial<Record<SettingsSection, string>> = {
+  whatsapp: 'bg-pastel-mint text-pastel-mint-fg',
+  members: 'bg-pastel-lilac text-pastel-lilac-fg',
+  templates: 'bg-pastel-peach text-pastel-peach-fg',
+  deals: 'bg-pastel-sky text-pastel-sky-fg',
+  fields: 'bg-pastel-coral text-pastel-coral-fg',
+};
+
 interface OverviewCounts {
   members: number | null;
   pendingInvites: number | null;
@@ -227,12 +236,12 @@ export function SettingsOverview({
           {profile?.avatar_url ? (
             <AvatarImage src={profile.avatar_url} alt={displayName} />
           ) : null}
-          <AvatarFallback className="bg-primary/10 text-xl text-primary">
+          <AvatarFallback className="bg-pastel-lilac text-xl font-bold text-pastel-lilac-fg">
             {initial}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-base font-semibold text-foreground">
+          <div className="truncate text-lg font-extrabold tracking-tight text-foreground">
             {displayName}
           </div>
           {profile?.email ? (
@@ -260,15 +269,15 @@ export function SettingsOverview({
               type="button"
               onClick={() => onSelect(section)}
               className={cn(
-                'group flex items-start gap-3.5 rounded-xl border border-border bg-card p-4 text-left transition-colors',
-                'hover:border-primary-soft-2 hover:bg-card-2',
+                'group flex items-start gap-3.5 rounded-[22px] border border-border bg-card p-4 text-left transition-colors',
+                'hover:bg-muted/60',
               )}
             >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+              <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-2xl', TILE_TONE[section] ?? 'bg-pastel-grey text-pastel-grey-fg')}>
                 <Icon className="size-4" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-foreground">
+                <span className="block text-[15px] font-bold text-foreground">
                   {tSections(section)}
                 </span>
                 <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">

@@ -12,10 +12,10 @@ import type { DedupeStatus, LeadInput, PreviewLead } from '@/lib/calling/types'
 import { cn } from '@/lib/utils'
 
 const STATUS: Record<DedupeStatus, { label: string; className: string }> = {
-  new: { label: 'New', className: 'bg-pastel-mint text-emerald-900 dark:text-emerald-200' },
+  new: { label: 'New', className: 'bg-pastel-mint text-pastel-mint-fg' },
   duplicate: { label: 'Already have', className: 'bg-muted text-muted-foreground' },
   dnc: { label: 'Do not call', className: 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' },
-  no_phone: { label: 'No phone', className: 'bg-pastel-coral text-red-900 dark:text-red-200' },
+  no_phone: { label: 'No phone', className: 'bg-pastel-coral text-pastel-coral-fg' },
 }
 
 function toLeadInput(l: PreviewLead): LeadInput {

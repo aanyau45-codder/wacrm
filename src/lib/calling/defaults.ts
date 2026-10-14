@@ -28,12 +28,12 @@ export const DEFAULT_CALL_SETTINGS: CallSettings = {
 }
 
 export const TEMPERATURE_META: Record<Temperature | 'new', { label: string; className: string }> = {
-  new: { label: 'New', className: 'bg-pastel-lilac text-violet-900 dark:text-violet-200' },
-  cold: { label: 'Cold', className: 'bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300' },
-  warm: { label: 'Warm', className: 'bg-pastel-peach text-orange-900 dark:text-orange-200' },
-  hot: { label: 'Hot', className: 'bg-pastel-coral text-red-900 dark:text-red-200' },
-  won: { label: 'Won', className: 'bg-pastel-mint text-emerald-900 dark:text-emerald-200' },
-  lost: { label: 'Lost', className: 'bg-zinc-200 text-zinc-700 dark:bg-zinc-500/20 dark:text-zinc-300' },
+  new: { label: 'New', className: 'bg-pastel-lilac text-pastel-lilac-fg' },
+  cold: { label: 'Cold', className: 'bg-pastel-sky text-pastel-sky-fg' },
+  warm: { label: 'Warm', className: 'bg-pastel-peach text-pastel-peach-fg' },
+  hot: { label: 'Hot', className: 'bg-pastel-coral text-pastel-coral-fg' },
+  won: { label: 'Won', className: 'bg-pastel-mint text-pastel-mint-fg' },
+  lost: { label: 'Lost', className: 'bg-pastel-grey text-pastel-grey-fg' },
   dnc: { label: 'Do not call', className: 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' },
 }
 

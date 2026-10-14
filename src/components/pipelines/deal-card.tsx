@@ -66,7 +66,7 @@ export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
           </span>
         )}
         {deal.status === "lost" && (
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-400">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-400">
             <X className="h-3 w-3" />
             {t("lost")}
           </span>
@@ -98,8 +98,8 @@ export function DealCard({ deal, stage, onEdit, isOverlay }: DealCardProps) {
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
               deal.call_lead.next_call_date && deal.call_lead.next_call_date < kampalaToday()
-                ? "bg-pastel-peach text-foreground"
-                : "bg-pastel-lilac text-foreground"
+                ? "bg-pastel-peach text-pastel-peach-fg"
+                : "bg-pastel-lilac text-pastel-lilac-fg"
             }`}
           >
             <Phone className="h-3 w-3" />

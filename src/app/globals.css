@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-poppins);
+  --font-heading: var(--font-sans);
   --font-brand: var(--font-fraunces);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -44,6 +44,20 @@
   --color-pastel-lilac: var(--pastel-lilac);
   --color-pastel-mint: var(--pastel-mint);
   --color-pastel-coral: var(--pastel-coral);
+  --color-pastel-sky: var(--pastel-sky);
+  --color-pastel-grey: var(--pastel-grey);
+  /* Text that sits on a pastel fill — dark ink in light mode, a light
+   * tint in dark mode, so pastel chips never go dark-on-dark. */
+  --color-pastel-peach-fg: var(--pastel-peach-fg);
+  --color-pastel-lilac-fg: var(--pastel-lilac-fg);
+  --color-pastel-mint-fg: var(--pastel-mint-fg);
+  --color-pastel-coral-fg: var(--pastel-coral-fg);
+  --color-pastel-sky-fg: var(--pastel-sky-fg);
+  --color-pastel-grey-fg: var(--pastel-grey-fg);
+  /* Airy accent: progress rings, meters, links, counts. */
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-call: var(--call);
   /* Secondary card surface (tile / hover backgrounds) and the accent
    * extras the Settings redesign leans on. The raw --primary-* vars
    * already exist per-accent below; these mappings expose them (and
@@ -93,72 +107,96 @@
 
 :root,
 html[data-mode="dark"] {
-  --background: oklch(0.13 0.01 260);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0.01 260);
-  --card-2: oklch(0.205 0.01 260);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.18 0.01 260);
-  --popover-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.22 0.01 260);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.22 0.01 260);
-  --muted-foreground: oklch(0.65 0.01 260);
-  --accent: oklch(0.22 0.01 260);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.28 0.01 260);
-  --input: oklch(0.28 0.01 260);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.16 0.01 260);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.22 0.01 260);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.28 0.01 260);
-  --pastel-peach: oklch(0.3 0.04 55);
-  --pastel-lilac: oklch(0.3 0.06 285);
-  --pastel-mint: oklch(0.3 0.04 175);
-  --pastel-coral: oklch(0.3 0.05 20);
+  /* Airy dark: warm near-black canvas, lifted cards, light ink. */
+  --background: #131217;
+  --foreground: #f3f1f6;
+  --card: #1c1b22;
+  --card-2: #25232c;
+  --card-foreground: #f3f1f6;
+  --popover: #1c1b22;
+  --popover-foreground: #f3f1f6;
+  --secondary: #25232c;
+  --secondary-foreground: #f3f1f6;
+  --muted: #25232c;
+  --muted-foreground: #9a95a5;
+  --accent: #25232c;
+  --accent-foreground: #f3f1f6;
+  --destructive: oklch(0.65 0.2 25);
+  --border: #2d2b35;
+  --input: #34313d;
+  --chart-2: #fdc9a1;
+  --chart-3: #9ee6c4;
+  --chart-4: #f9b2a7;
+  --chart-5: #a9cdf7;
+  --radius: 0.875rem;
+  --sidebar: #17161c;
+  --sidebar-foreground: #f3f1f6;
+  --sidebar-accent: #25232c;
+  --sidebar-accent-foreground: #f3f1f6;
+  --sidebar-border: #2d2b35;
+  /* Pastels in dark mode are low-alpha washes; pair with the -fg text. */
+  --pastel-peach: rgb(253 190 140 / 0.14);
+  --pastel-lilac: rgb(170 150 255 / 0.16);
+  --pastel-mint: rgb(110 220 170 / 0.14);
+  --pastel-coral: rgb(250 140 125 / 0.15);
+  --pastel-sky: rgb(120 175 245 / 0.15);
+  --pastel-grey: rgb(255 255 255 / 0.07);
+  --pastel-peach-fg: #fdc9a1;
+  --pastel-lilac-fg: #cbbdff;
+  --pastel-mint-fg: #9ee6c4;
+  --pastel-coral-fg: #f9b2a7;
+  --pastel-sky-fg: #a9cdf7;
+  --pastel-grey-fg: #c3bfcb;
+  --brand: #a48cff;
+  --brand-soft: rgb(164 140 255 / 0.16);
+  --call: #22c55e;
 }
 
 /* Light mode is the Argon "Pastel Cards" look: soft grey canvas,
  * white cards, ink text, generous radii. */
 html[data-mode="light"] {
-  --background: #f6f6f8;
-  --foreground: #17171c;
+  /* Airy light: warm off-white canvas, white bordered cards, ink. */
+  --background: #f7f5f2;
+  --foreground: #1d1b22;
   --card: #ffffff;
-  --card-2: #f9f9fb;
-  --card-foreground: #17171c;
+  --card-2: #f0ece6;
+  --card-foreground: #1d1b22;
   --popover: #ffffff;
-  --popover-foreground: #17171c;
-  --secondary: #f1f1f5;
-  --secondary-foreground: #17171c;
-  --muted: #f1f1f5;
-  --muted-foreground: #6b6b7b;
-  --accent: #efeffa;
-  --accent-foreground: #17171c;
+  --popover-foreground: #1d1b22;
+  --secondary: #f0ece6;
+  --secondary-foreground: #1d1b22;
+  --muted: #f0ece6;
+  --muted-foreground: #7d7787;
+  --accent: #f3efe9;
+  --accent-foreground: #1d1b22;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #ebebf0;
-  --input: #e4e4ea;
+  --border: #ebe5dd;
+  --input: #e2dbd1;
   --chart-2: #f5b48c;
   --chart-3: #8fd6c6;
   --chart-4: #f29b9b;
-  --chart-5: #dcdcfb;
+  --chart-5: #a9c8f0;
   --radius: 0.875rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #17171c;
-  --sidebar-accent: #f1f1f5;
-  --sidebar-accent-foreground: #17171c;
-  --sidebar-border: #ebebf0;
-  /* Pastel tile fills (dashboard cards, illustrations). */
+  --sidebar-foreground: #1d1b22;
+  --sidebar-accent: #f0ece6;
+  --sidebar-accent-foreground: #1d1b22;
+  --sidebar-border: #ebe5dd;
   --pastel-peach: #fde3cf;
-  --pastel-lilac: #dcdcfb;
-  --pastel-mint: #c9eee6;
-  --pastel-coral: #fbcaca;
+  --pastel-lilac: #e7e1fc;
+  --pastel-mint: #d3f1e3;
+  --pastel-coral: #fcd5cf;
+  --pastel-sky: #dcebfb;
+  --pastel-grey: #eeebe7;
+  --pastel-peach-fg: #8a3f0c;
+  --pastel-lilac-fg: #4b3aa0;
+  --pastel-mint-fg: #135e3c;
+  --pastel-coral-fg: #9b2c1f;
+  --pastel-sky-fg: #1e4f8c;
+  --pastel-grey-fg: #5d5866;
+  --brand: #7c5cff;
+  --brand-soft: #ece7ff;
+  --call: #16a34a;
 }
 
 /* ---- ACCENT: primary color ---- */
@@ -167,29 +205,29 @@ html[data-mode="light"] {
  * (dark pill buttons) with lilac as the soft tint; in dark mode the
  * lilac itself is primary so buttons stay visible. */
 html[data-theme="lilac"] {
-  --primary: #b9b8f2;
-  --primary-foreground: #17171c;
-  --primary-hover: #cac9f6;
-  --primary-soft: rgb(185 184 242 / 0.14);
-  --primary-soft-2: rgb(185 184 242 / 0.24);
-  --ring: #b9b8f2;
-  --chart-1: #b9b8f2;
-  --sidebar-primary: #b9b8f2;
-  --sidebar-primary-foreground: #17171c;
-  --sidebar-ring: #b9b8f2;
+  --primary: #f3f1f6;
+  --primary-foreground: #131217;
+  --primary-hover: #ffffff;
+  --primary-soft: rgb(164 140 255 / 0.16);
+  --primary-soft-2: rgb(164 140 255 / 0.26);
+  --ring: #a48cff;
+  --chart-1: #a48cff;
+  --sidebar-primary: #f3f1f6;
+  --sidebar-primary-foreground: #131217;
+  --sidebar-ring: #a48cff;
 }
 
 html[data-theme="lilac"][data-mode="light"] {
-  --primary: #17171c;
+  --primary: #1d1b22;
   --primary-foreground: #ffffff;
-  --primary-hover: #2e2d38;
-  --primary-soft: #ececfd;
-  --primary-soft-2: #dcdcfb;
-  --ring: #b9b8f2;
-  --chart-1: #9b98ea;
-  --sidebar-primary: #17171c;
+  --primary-hover: #34313d;
+  --primary-soft: #ece7ff;
+  --primary-soft-2: #e0d8ff;
+  --ring: #7c5cff;
+  --chart-1: #7c5cff;
+  --sidebar-primary: #1d1b22;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-ring: #b9b8f2;
+  --sidebar-ring: #7c5cff;
 }
 
 
@@ -277,5 +315,6 @@ html[data-theme="rose"] {
   h2,
   h3 {
     font-family: var(--font-heading);
+    letter-spacing: -0.015em;
   }
 }

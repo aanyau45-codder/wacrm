@@ -115,27 +115,27 @@ export default function CallResultsPage() {
       {/* 2×2 pastel tiles */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile
-          tone="bg-pastel-peach"
+          tone="bg-pastel-peach text-pastel-peach-fg"
           label="Today"
           value={String(stats.callsToday)}
           of={settings.daily_target}
           sub={`${stats.queueToday} queued${stats.overdue ? ` · ${stats.overdue} overdue` : ''}`}
         />
         <Tile
-          tone="bg-pastel-lilac"
+          tone="bg-pastel-lilac text-pastel-lilac-fg"
           label="This week"
           value={String(stats.callsWeek)}
           of={settings.weekly_target}
           sub="Mon – Sun"
         />
         <Tile
-          tone="bg-pastel-mint"
+          tone="bg-pastel-mint text-pastel-mint-fg"
           label="Pick-up rate"
           value={pct(stats.pickupRate)}
           sub={`of ${stats.callsInRange} calls · ${range}d`}
         />
         <Tile
-          tone="bg-pastel-coral"
+          tone="bg-pastel-coral text-pastel-coral-fg"
           label="Hot → Won"
           value={pct(stats.hotToWon)}
           sub={stats.hotEver ? `${stats.hotWon} of ${stats.hotEver} hot leads` : 'no hot leads yet'}
@@ -143,11 +143,11 @@ export default function CallResultsPage() {
       </div>
 
       {/* Calls per day */}
-      <section className="rounded-[20px] border border-border bg-card p-4 sm:p-5">
+      <section className="rounded-[22px] border border-border bg-card p-4 sm:p-5">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-sm font-bold">Calls per day</h2>
           <span className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-violet-500" />picked up</span>
+            <span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-brand" />picked up</span>
             <span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-pastel-lilac" />no answer</span>
             <span className="flex items-center gap-1"><i className="h-px w-3 border-t border-dashed border-foreground/60" />target</span>
           </span>
@@ -164,7 +164,7 @@ export default function CallResultsPage() {
                 style={{ height: `${((d.calls - d.pickups) / maxDay) * 100}%` }}
               />
               <div
-                className={cn('w-full bg-violet-500', d.calls - d.pickups ? '' : range === 7 ? 'rounded-t-lg' : 'rounded-t-[3px]')}
+                className={cn('w-full bg-brand', d.calls - d.pickups ? '' : range === 7 ? 'rounded-t-lg' : 'rounded-t-[3px]')}
                 style={{ height: `${(d.pickups / maxDay) * 100}%` }}
               />
             </div>
@@ -188,7 +188,7 @@ export default function CallResultsPage() {
 
       <div className="grid gap-3 lg:grid-cols-2">
         {/* Temperature */}
-        <section className="rounded-[20px] border border-border bg-card p-4 sm:p-5">
+        <section className="rounded-[22px] border border-border bg-card p-4 sm:p-5">
           <h2 className="mb-3 text-sm font-bold">
             Leads by temperature <span className="font-normal text-muted-foreground">· {totalLeads}</span>
           </h2>
@@ -210,7 +210,7 @@ export default function CallResultsPage() {
         </section>
 
         {/* Outcomes */}
-        <section className="rounded-[20px] border border-border bg-card p-4 sm:p-5">
+        <section className="rounded-[22px] border border-border bg-card p-4 sm:p-5">
           <h2 className="mb-3 text-sm font-bold">Outcomes · {range}d</h2>
           {stats.byOutcome.length === 0 ? (
             <p className="text-sm text-muted-foreground">No calls logged yet.</p>
@@ -223,7 +223,7 @@ export default function CallResultsPage() {
                     <span className="font-semibold tabular-nums">{o.count}</span>
                   </div>
                   <div className="mt-1 h-1.5 rounded-full bg-pastel-lilac">
-                    <div className="h-full rounded-full bg-violet-500" style={{ width: `${(o.count / stats.callsInRange) * 100}%` }} />
+                    <div className="h-full rounded-full bg-brand" style={{ width: `${(o.count / stats.callsInRange) * 100}%` }} />
                   </div>
                 </li>
               ))}
@@ -233,7 +233,7 @@ export default function CallResultsPage() {
       </div>
 
       {/* Industry */}
-      <section className="rounded-[20px] border border-border bg-card p-4 sm:p-5">
+      <section className="rounded-[22px] border border-border bg-card p-4 sm:p-5">
         <h2 className="mb-3 text-sm font-bold">By industry · {range}d</h2>
         {stats.byIndustry.length === 0 ? (
           <p className="text-sm text-muted-foreground">Log calls to compare industries.</p>
@@ -267,18 +267,18 @@ const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 function Tile({ tone, label, value, of, sub }: { tone: string; label: string; value: string; of?: number; sub: string }) {
   const p = of ? Math.min(100, Math.round((Number(value) / Math.max(1, of)) * 100)) : null
   return (
-    <div className={cn('flex flex-col rounded-[20px] p-4', tone)}>
-      <p className="text-xs font-semibold text-foreground/70">{label}</p>
-      <p className="mt-1.5 text-3xl leading-none font-extrabold tracking-tight tabular-nums">
+    <div className={cn('flex min-h-[132px] flex-col rounded-[22px] p-4 sm:p-5', tone)}>
+      <p className="text-[13px] font-bold">{label}</p>
+      <p className="mt-2 text-[30px] leading-none font-extrabold tracking-[-0.02em] tabular-nums">
         {value}
-        {of ? <span className="text-base font-semibold text-foreground/50"> /{of}</span> : null}
+        {of ? <span className="text-base font-semibold opacity-60"> /{of}</span> : null}
       </p>
       {p !== null ? (
-        <div className="mt-3 h-1.5 rounded-full bg-foreground/10">
-          <div className="h-full rounded-full bg-foreground/80 transition-all" style={{ width: `${p}%` }} />
+        <div className="mt-3 h-1.5 rounded-full bg-current/15">
+          <div className="h-full rounded-full bg-current transition-all" style={{ width: `${p}%` }} />
         </div>
       ) : null}
-      <p className="mt-auto pt-2 text-[11px] text-foreground/70">{sub}</p>
+      <p className="mt-auto pt-2 text-xs font-semibold opacity-75">{sub}</p>
     </div>
   )
 }

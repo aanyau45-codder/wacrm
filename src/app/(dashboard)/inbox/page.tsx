@@ -562,13 +562,17 @@ function InboxPageInner() {
   const hasActiveConv = !!activeConversation;
 
   return (
-    <div className="-m-4 flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden sm:-m-6">
+    <div
+      // Fill <main> edge to edge; an open thread hides the phone tab bar.
+      data-hide-nav={hasActiveConv ? "" : undefined}
+      className="-mx-4 -mt-2 -mb-6 flex h-[calc(100%+2rem)] flex-col overflow-hidden sm:-mx-6 lg:m-0 lg:h-full lg:rounded-[22px] lg:border lg:border-border lg:bg-card"
+    >
       {/* WhatsApp connection banner — in the flex column, not absolute,
           so it pushes the panels down instead of overlapping them. */}
       {whatsappConnected === false && (
         <div className="flex shrink-0 items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2">
-          <WifiOff className="h-4 w-4 text-amber-400" />
-          <p className="text-xs text-amber-400">
+          <WifiOff className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+          <p className="text-xs text-amber-700 dark:text-amber-400">
             {t("whatsappNotConnected")}
           </p>
         </div>
