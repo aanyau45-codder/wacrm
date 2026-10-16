@@ -4,6 +4,7 @@ import {
   DEFAULT_CURRENCY,
   formatCurrency,
   formatCurrencyShort,
+  totalsCurrency,
 } from "./currency";
 
 describe("formatCurrency", () => {
@@ -61,5 +62,13 @@ describe("formatCurrencyShort", () => {
 
   it("falls back to the code prefix for unknown currencies (no throw)", () => {
     expect(formatCurrencyShort(1_000, "ZZZ")).toBe("ZZZ 1.0k");
+  });
+});
+
+describe("totalsCurrency", () => {
+  it("uses the deals' shared currency, else the fallback", () => {
+    expect(totalsCurrency([{ currency: "UGX" }, { currency: "ugx" }, { currency: null }], "USD")).toBe("UGX");
+    expect(totalsCurrency([{ currency: "UGX" }, { currency: "KES" }], "USD")).toBe("USD");
+    expect(totalsCurrency([], "USD")).toBe("USD");
   });
 });

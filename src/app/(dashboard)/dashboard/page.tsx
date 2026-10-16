@@ -175,7 +175,7 @@ export default function DashboardPage() {
             />
             <MetricCard
               title={t('openDealsValue')}
-              value={formatCurrencyShort(metrics.openDealsValue, defaultCurrency)}
+              value={formatCurrencyShort(metrics.openDealsValue, metrics.openDealsCurrency ?? defaultCurrency)}
               icon={DollarSign}
               tone="mint"
               subtitle={t('openDeals', { count: metrics.openDealsCount })}
@@ -228,7 +228,7 @@ export default function DashboardPage() {
           <PipelineDonut
             data={pipeline}
             loading={pipelineLoading}
-            currency={defaultCurrency}
+            currency={pipeline?.currency ?? defaultCurrency}
           />
         </div>
       </div>

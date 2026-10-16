@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/currency'
 import { formatCallTime, formatDay, kampalaToday } from '@/lib/calling/dates'
 import { formatPhone, whatsappLink } from '@/lib/calling/phone'
+import { fillQuickMessage } from '@/lib/calling/quick-messages'
 import type { CallLead, CallLog, CallSettings } from '@/lib/calling/types'
 import type { DealStatus } from '@/types'
 import { LogCallForm } from './log-call-form'
@@ -108,6 +109,16 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
   }
 
   const wa = lead ? whatsappLink(lead.phone) : null
+  const quick =
+    lead && wa && !lead.do_not_call
+      ? settings.quick_messages
+          .map((m) => m.trim())
+          .filter(Boolean)
+          .map((m) => {
+            const text = fillQuickMessage(m, lead)
+            return { text, href: whatsappLink(lead.phone, text)! }
+          })
+      : []
   const socials = lead ? Object.entries(lead.social_links ?? {}) : []
 
   return (
@@ -187,6 +198,28 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
                   </a>
                 ) : null}
               </div>
+              {quick.length ? (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">Quick WhatsApp</h3>
+                    <Link href="/calls/settings#quick-messages" className="text-xs font-medium text-muted-foreground underline">
+                      Edit
+                    </Link>
+                  </div>
+                  {quick.map((q) => (
+                    <a
+                      key={q.href}
+                      href={q.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-start gap-2.5 rounded-2xl bg-pastel-mint/60 p-3 text-left text-sm text-pastel-mint-fg hover:bg-pastel-mint"
+                    >
+                      <MessageCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span className="line-clamp-2 min-w-0 flex-1">{q.text}</span>
+                    </a>
+                  ))}
+                </div>
+              ) : null}
               {lead.lead_note || lead.email || lead.address || socials.length ? (
                 <div className="space-y-1 rounded-xl bg-muted/60 p-3 text-xs text-muted-foreground">
                   {lead.lead_note ? <p className="text-foreground">{lead.lead_note}</p> : null}

@@ -33,10 +33,12 @@ export function phoneKey(phone: string | null | undefined): string {
   return (phone ?? '').replace(/\D/g, '')
 }
 
-/** wa.me link for a normalised number. */
-export function whatsappLink(phone: string | null | undefined): string | null {
+/** wa.me link for a normalised number, optionally with a pre-filled message. */
+export function whatsappLink(phone: string | null | undefined, text?: string): string | null {
   const digits = phoneKey(phone)
-  return digits.length >= 10 ? `https://wa.me/${digits}` : null
+  if (digits.length < 10) return null
+  const msg = text?.trim()
+  return msg ? `https://wa.me/${digits}?text=${encodeURIComponent(msg)}` : `https://wa.me/${digits}`
 }
 
 /** "+256 772 123 456" for display. */

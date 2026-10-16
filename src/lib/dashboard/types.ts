@@ -12,6 +12,8 @@ export interface MetricsBundle {
   newContactsToday: MetricDelta
   openDealsValue: number
   openDealsCount: number
+  /** The open deals' shared currency, or null when mixed/unknown. */
+  openDealsCurrency: string | null
   messagesSentToday: MetricDelta
 }
 
@@ -32,6 +34,8 @@ export interface PipelineStageSlice {
 export interface PipelineDonutData {
   stages: PipelineStageSlice[]
   totalValue: number
+  /** The deals' shared currency, or null when mixed/unknown. */
+  currency: string | null
 }
 
 export interface ResponseTimeBucket {

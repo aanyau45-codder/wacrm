@@ -1,3 +1,4 @@
+import { DEFAULT_QUICK_MESSAGES } from './quick-messages'
 import type { CallSettings, OutcomeConfig, Temperature } from './types'
 
 // Mirrors the seed in supabase/migrations/040_lead_calling.sql. Used
@@ -25,6 +26,7 @@ export const DEFAULT_CALL_SETTINGS: CallSettings = {
   park_days: 30,
   outcomes: DEFAULT_OUTCOMES,
   extra_tags: ['Decision maker', 'Gatekeeper', 'Send WhatsApp', 'Price sensitive', 'Follow up by email'],
+  quick_messages: DEFAULT_QUICK_MESSAGES,
 }
 
 export const TEMPERATURE_META: Record<Temperature | 'new', { label: string; className: string }> = {
@@ -56,5 +58,7 @@ export function resolveSettings(row: Partial<CallSettings> | null | undefined): 
     park_days: num(row.park_days, d.park_days),
     outcomes: Array.isArray(row.outcomes) && row.outcomes.length > 0 ? row.outcomes : d.outcomes,
     extra_tags: Array.isArray(row.extra_tags) ? row.extra_tags : d.extra_tags,
+    // NULL (or a row from before migration 043) means the defaults.
+    quick_messages: Array.isArray(row.quick_messages) ? row.quick_messages : d.quick_messages,
   }
 }

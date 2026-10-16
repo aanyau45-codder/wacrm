@@ -100,6 +100,27 @@ export function formatCurrencyShort(
 }
 
 /**
+ * Currency to show a total of several deals in. When every deal that has
+ * a currency shares the same one (e.g. all UGX), that's what the total is
+ * in — even if the account default still says USD. Mixed or unknown
+ * currencies fall back to the account default.
+ */
+export function totalsCurrency(
+  deals: { currency?: string | null }[],
+  fallback: string = DEFAULT_CURRENCY,
+): string {
+  const codes = new Set(
+    deals.map((d) => d.currency?.trim().toUpperCase()).filter((c): c is string => !!c),
+  );
+  return codes.size === 1 ? [...codes][0] : fallback;
+}
+
+/** Symbol for a currency code ("UGX" → "USh"), or the code itself. */
+export function currencySymbol(code: string): string {
+  return CURRENCIES.find((c) => c.code === code)?.symbol ?? code;
+}
+
+/**
  * Compact number for tight spaces (chart tiles, legends): 1_234 → "1.2k",
  * 1_200_000 → "1.2M", 900 → "900". The unit-less core shared with
  * {@link formatCurrencyShort}.

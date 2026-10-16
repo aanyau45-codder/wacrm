@@ -19,7 +19,7 @@ import { DealCard } from "./deal-card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, totalsCurrency } from "@/lib/currency";
 import { useTranslations } from "next-intl";
 
 interface PipelineBoardProps {
@@ -37,7 +37,11 @@ export function PipelineBoard({
   onAddDeal,
   onEditDeal,
 }: PipelineBoardProps) {
-  const { defaultCurrency } = useAuth();
+  const { defaultCurrency: accountCurrency } = useAuth();
+  const defaultCurrency = useMemo(
+    () => totalsCurrency(deals, accountCurrency),
+    [deals, accountCurrency],
+  );
   const [activeDealId, setActiveDealId] = useState<string | null>(null);
 
   const sortedStages = useMemo(

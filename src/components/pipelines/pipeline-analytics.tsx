@@ -11,7 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
-import { formatCurrencyShort } from "@/lib/currency";
+import { formatCurrencyShort, totalsCurrency } from "@/lib/currency";
 import { useTranslations } from "next-intl";
 
 interface PipelineAnalyticsProps {
@@ -41,7 +41,11 @@ function computeStageProbability(
 
 export function PipelineAnalytics({ stages, deals }: PipelineAnalyticsProps) {
   const t = useTranslations("Pipelines.analytics");
-  const { defaultCurrency } = useAuth();
+  const { defaultCurrency: accountCurrency } = useAuth();
+  const defaultCurrency = useMemo(
+    () => totalsCurrency(deals, accountCurrency),
+    [deals, accountCurrency],
+  );
   const sortedStages = useMemo(
     () => [...stages].sort((a, b) => a.position - b.position),
     [stages],

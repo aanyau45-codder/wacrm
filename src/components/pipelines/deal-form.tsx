@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { CURRENCIES } from "@/lib/currency";
+import { CURRENCIES, currencySymbol } from "@/lib/currency";
 import type {
   Contact,
   Conversation,
@@ -28,7 +28,6 @@ import {
   X,
   Trash2,
   MessageSquare,
-  DollarSign,
   Loader2,
   Phone,
 } from "lucide-react";
@@ -320,13 +319,15 @@ export function DealForm({
               <div className="grid gap-2">
                 <Label className="text-muted-foreground">{t("value")}</Label>
                 <div className="relative">
-                  <DollarSign className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                    {currencySymbol(currency)}
+                  </span>
                   <Input
                     type="number"
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
                     placeholder="0"
-                    className="border-border bg-muted pl-7 text-foreground"
+                    className="border-border bg-muted pl-12 text-foreground"
                   />
                 </div>
               </div>

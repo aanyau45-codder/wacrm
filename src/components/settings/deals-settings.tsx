@@ -53,11 +53,13 @@ export function DealsSettings() {
   async function handleSave() {
     if (!accountId || !dirty) return;
     setSaving(true);
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("accounts")
       .update({ default_currency: selected })
-      .eq("id", accountId);
-    if (error) {
+      .eq("id", accountId)
+      .select("id");
+    // RLS (owners/admins only) blocks silently: no error, zero rows.
+    if (error || !data?.length) {
       toast.error(t("saveFailed"));
       setSaving(false);
       return;

@@ -49,6 +49,8 @@ export interface CallSettings {
   park_days: number
   outcomes: OutcomeConfig[]
   extra_tags: string[]
+  /** WhatsApp texts offered on the lead sheet ({name}, {business}). */
+  quick_messages: string[]
 }
 
 export type LeadSourceId = 'google_places' | 'ai_web' | 'csv' | 'manual'

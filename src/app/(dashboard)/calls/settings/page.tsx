@@ -8,10 +8,12 @@ import { useAuth } from '@/hooks/use-auth'
 import { useCan } from '@/hooks/use-can'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { CallsHeader } from '@/components/calling/calls-nav'
 import { useCallSettings } from '@/components/calling/use-call-settings'
 import { DEFAULT_OUTCOMES, TEMPERATURE_META } from '@/lib/calling/defaults'
+import { DEFAULT_QUICK_MESSAGES, MAX_QUICK_MESSAGES } from '@/lib/calling/quick-messages'
 import { OUTCOME_ACTIONS, TEMPERATURES, type CallSettings, type OutcomeConfig, type OutcomeAction, type Temperature } from '@/lib/calling/types'
 import { cn } from '@/lib/utils'
 
@@ -44,12 +46,20 @@ export default function CallSettingsPage() {
     if (!draft.call_days.length) return toast.error('Pick at least one calling day')
     if (draft.end_time <= draft.start_time) return toast.error('End time must be after start time')
     if (draft.outcomes.some((o) => !o.label.trim())) return toast.error('Every outcome needs a name')
+    const row = { account_id: accountId, ...draft, quick_messages: draft.quick_messages.map((m) => m.trim()).filter(Boolean) }
     setSaving(true)
-    const { error } = await createClient()
-      .from('call_settings')
-      .upsert({ account_id: accountId, ...draft }, { onConflict: 'account_id' })
+    const db = createClient()
+    let { error } = await db.from('call_settings').upsert(row, { onConflict: 'account_id' })
+    // Before migration 043 the column doesn't exist — save everything else.
+    const missingColumn = !!error && /quick_messages/.test(error.message)
+    if (missingColumn) {
+      const { quick_messages: _skip, ...rest } = row
+      void _skip
+      ;({ error } = await db.from('call_settings').upsert(rest, { onConflict: 'account_id' }))
+    }
     setSaving(false)
     if (error) return toast.error(error.message)
+    if (missingColumn) return toast.warning('Saved, except quick messages — run migration 043 in Supabase first')
     toast.success('Calling settings saved')
   }
 
@@ -217,6 +227,47 @@ export default function CallSettingsPage() {
           >
             <Plus /> Add outcome
           </Button>
+        </section>
+
+        <section id="quick-messages" className="scroll-mt-4 space-y-3 rounded-[22px] border border-border bg-card p-4 sm:p-6">
+          <div>
+            <h2 className="font-semibold">Quick WhatsApp messages</h2>
+            <p className="text-sm text-muted-foreground">
+              One tap on a lead opens WhatsApp with the text ready. {'{name}'} becomes the contact (or business) name,{' '}
+              {'{business}'} the business name.
+            </p>
+          </div>
+          {draft.quick_messages.map((m, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <Textarea
+                value={m}
+                rows={2}
+                maxLength={500}
+                onChange={(e) => set('quick_messages', draft.quick_messages.map((x, j) => (j === i ? e.target.value : x)))}
+                className="min-h-16 flex-1"
+                aria-label={`Quick message ${i + 1}`}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Remove message ${i + 1}`}
+                onClick={() => set('quick_messages', draft.quick_messages.filter((_, j) => j !== i))}
+              >
+                <Trash2 />
+              </Button>
+            </div>
+          ))}
+          <div className="flex flex-wrap gap-2">
+            {draft.quick_messages.length < MAX_QUICK_MESSAGES ? (
+              <Button type="button" variant="outline" onClick={() => set('quick_messages', [...draft.quick_messages, 'Hello {name}, '])}>
+                <Plus /> Add message
+              </Button>
+            ) : null}
+            <Button type="button" variant="ghost" onClick={() => set('quick_messages', DEFAULT_QUICK_MESSAGES)}>
+              <RotateCcw /> Reset
+            </Button>
+          </div>
         </section>
 
         <section className="space-y-3 rounded-[22px] border border-border bg-card p-4 sm:p-6">
