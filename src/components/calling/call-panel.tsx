@@ -125,6 +125,18 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
                 {lead.town ? <span className="text-xs text-muted-foreground">· {lead.town}</span> : null}
               </div>
               <SheetTitle className="text-2xl font-extrabold tracking-tight">{lead.business_name}</SheetTitle>
+              {lead.phone ? (
+                lead.do_not_call ? (
+                  <p className="text-lg font-bold whitespace-nowrap text-muted-foreground tabular-nums">{formatPhone(lead.phone)}</p>
+                ) : (
+                  <a
+                    href={`tel:${lead.phone}`}
+                    className="block w-fit text-lg font-bold whitespace-nowrap text-green-700 tabular-nums dark:text-green-400"
+                  >
+                    {formatPhone(lead.phone)}
+                  </a>
+                )
+              ) : null}
               <SheetDescription>
                 {lead.contact_person ? `${lead.contact_person} · ` : ''}
                 {lead.attempts} {lead.attempts === 1 ? 'call' : 'calls'}
@@ -138,7 +150,7 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
                     className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-green-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-green-700"
                   >
                     <Phone className="h-4 w-4" />
-                    {formatPhone(lead.phone)}
+                    Call
                   </a>
                 ) : null}
                 {wa ? (
