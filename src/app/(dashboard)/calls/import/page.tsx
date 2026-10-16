@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CallsHeader } from '@/components/calling/calls-nav'
 import { LeadPreview } from '@/components/calling/lead-preview'
+import { tagFromFileName, withTag } from '@/lib/calling/list-tags'
 import { parseLeadFile } from '@/lib/calling/parse-leads'
 import type { LeadInput, PreviewLead } from '@/lib/calling/types'
 
@@ -26,6 +27,8 @@ export default function ImportLeadsPage() {
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState<PreviewLead[] | null>(null)
   const [mapped, setMapped] = useState<string | null>(null)
+  // Auto list tag: the industry typed above, else the file name.
+  const [listTag, setListTag] = useState('')
   const [runId, setRunId] = useState(0)
   const [industry, setIndustry] = useState('')
   const [manual, setManual] = useState({ business_name: '', phone: '', contact_person: '', town: '', industry: '' })
@@ -37,6 +40,7 @@ export default function ImportLeadsPage() {
     try {
       const parsed = await parseLeadFile(file, industry.trim() ? { industry: industry.trim() } : {})
       if (parsed.error) throw new Error(parsed.error)
+      setListTag(industry.trim() || tagFromFileName(file.name))
       setMapped(parsed.mapped.map((m) => `${m.column} → ${m.field.replace('_', ' ')}`).join(' · '))
       setPreview(await checkLeads(parsed.leads))
       setRunId((n) => n + 1)
@@ -53,12 +57,13 @@ export default function ImportLeadsPage() {
     if (!manual.business_name.trim() || !manual.phone.trim()) return toast.error('Name and phone are required')
     setBusy(true)
     try {
-      const [checked] = await checkLeads([{ ...manual, source: 'manual' }])
+      const lead = { ...manual, source: 'manual' as const, tags: withTag([], manual.industry) }
+      const [checked] = await checkLeads([lead])
       if (checked.status !== 'new') throw new Error(checked.reason ?? 'Already in your list')
       const res = await fetch('/api/calling/leads/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leads: [{ ...manual, source: 'manual' }] }),
+        body: JSON.stringify({ leads: [lead] }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Could not add the lead')
@@ -88,7 +93,7 @@ export default function ImportLeadsPage() {
         <Input
           value={industry}
           onChange={(e) => setIndustry(e.target.value)}
-          placeholder="Industry for this list (optional)"
+          placeholder="List name or industry, e.g. Schools (optional)"
           className="h-10 rounded-xl bg-card"
         />
         <input
@@ -107,7 +112,7 @@ export default function ImportLeadsPage() {
       {preview ? (
         <section className="space-y-2">
           {mapped ? <p className="text-xs text-muted-foreground">Columns: {mapped}</p> : null}
-          <LeadPreview key={runId} leads={preview} />
+          <LeadPreview key={runId} leads={preview} defaultTag={listTag} />
         </section>
       ) : null}
 

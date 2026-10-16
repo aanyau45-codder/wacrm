@@ -16,11 +16,30 @@ import { useCallSettings } from '@/components/calling/use-call-settings'
 import { endOfWeek, formatDate, formatDay, kampalaStartOfDay, kampalaToday } from '@/lib/calling/dates'
 import { formatPhone, whatsappLink } from '@/lib/calling/phone'
 import { TEMPERATURE_META } from '@/lib/calling/defaults'
+import { countTypes, leadTypes, typeKey } from '@/lib/calling/list-tags'
 import type { CallLead, Temperature } from '@/lib/calling/types'
 import { cn } from '@/lib/utils'
 
 type Tab = 'today' | 'overdue' | 'week' | 'all'
+type SortKey = 'auto' | 'name' | 'newest' | 'oldest' | 'town'
 const PAGE = 1000
+const SORT_STORAGE_KEY = 'calls.sort'
+
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: 'auto', label: 'Suggested' },
+  { key: 'name', label: 'Name A–Z' },
+  { key: 'newest', label: 'Newest added' },
+  { key: 'oldest', label: 'Oldest added' },
+  { key: 'town', label: 'Town' },
+]
+
+const SORTERS: Record<Exclude<SortKey, 'auto'>, (a: CallLead, b: CallLead) => number> = {
+  name: (a, b) => a.business_name.localeCompare(b.business_name),
+  newest: (a, b) => b.created_at.localeCompare(a.created_at) || byPriority(a, b),
+  oldest: (a, b) => a.created_at.localeCompare(b.created_at) || byPriority(a, b),
+  // Leads without a town go last.
+  town: (a, b) => (a.town ?? '\uffff').localeCompare(b.town ?? '\uffff') || byPriority(a, b),
+}
 
 function byPriority(a: CallLead, b: CallLead) {
   return b.priority - a.priority || a.business_name.localeCompare(b.business_name)
@@ -37,6 +56,9 @@ export default function CallTodayPage() {
   const [tempFilter, setTempFilter] = useState<Temperature | 'new' | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [filterOpen, setFilterOpen] = useState(false)
+  // List types (tags like "Schools", or the industry) — several can be on.
+  const [types, setTypes] = useState<string[]>([])
+  const [sort, setSort] = useState<SortKey>('auto')
   const deepLinked = useRef(false)
   const today = kampalaToday()
 
@@ -77,6 +99,28 @@ export default function CallTodayPage() {
     void load()
   }, [load])
 
+  // Remember the chosen sort on this device; storage can throw in
+  // private mode, so it's best-effort.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SORT_STORAGE_KEY) as SortKey | null
+      if (saved && SORTS.some((s) => s.key === saved)) setSort(saved)
+    } catch {}
+  }, [])
+  function changeSort(next: SortKey) {
+    setSort(next)
+    try {
+      localStorage.setItem(SORT_STORAGE_KEY, next)
+    } catch {}
+  }
+
+  const typeOptions = useMemo(() => countTypes(leads ?? []), [leads])
+  const typeLabel = (key: string) => typeOptions.find((t) => t.key === key)?.label ?? key
+  function toggleType(key: string) {
+    setTypes((ts) => (ts.includes(key) ? ts.filter((t) => t !== key) : [...ts, key]))
+  }
+  const filterCount = types.length + (tempFilter ? 1 : 0) + (sort !== 'auto' ? 1 : 0)
+
   const queued = useMemo(
     () => (leads ?? []).filter((l) => l.next_call_date && !l.do_not_call && !l.phone_invalid),
     [leads],
@@ -105,8 +149,10 @@ export default function CallTodayPage() {
       )
     }
     if (tempFilter) rows = rows.filter((l) => (l.temperature ?? 'new') === tempFilter)
+    if (types.length) rows = rows.filter((l) => leadTypes(l).some((t) => types.includes(typeKey(t))))
+    if (sort !== 'auto') rows = [...rows].sort(SORTERS[sort])
     return rows
-  }, [lists, tab, query, tempFilter])
+  }, [lists, tab, query, tempFilter, types, sort])
 
   const openLead = leads?.find((l) => l.id === openId) ?? null
 
@@ -182,28 +228,53 @@ export default function CallTodayPage() {
           <button
             type="button"
             onClick={() => setFilterOpen(true)}
-            aria-label="Filter by stage"
+            aria-label="Filter and sort"
             className={cn(
               'absolute top-1/2 right-1.5 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-[10px] transition-colors',
-              tempFilter ? 'bg-foreground text-background' : 'text-foreground hover:bg-muted',
+              filterCount ? 'bg-foreground text-background' : 'text-foreground hover:bg-muted',
             )}
           >
             <SlidersHorizontal className="h-4 w-4" />
           </button>
         </div>
 
-        {tempFilter && (
-          <button
-            type="button"
-            onClick={() => setTempFilter(null)}
-            className={cn(
-              'inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold',
-              TEMPERATURE_META[tempFilter].className,
+        {filterCount > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {types.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => toggleType(key)}
+                className="inline-flex h-7 max-w-full items-center gap-1 rounded-full bg-pastel-sky px-2.5 text-xs font-semibold text-pastel-sky-fg"
+              >
+                <span className="truncate">{typeLabel(key)}</span>
+                <X className="h-3 w-3 shrink-0" />
+              </button>
+            ))}
+            {tempFilter && (
+              <button
+                type="button"
+                onClick={() => setTempFilter(null)}
+                className={cn(
+                  'inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold',
+                  TEMPERATURE_META[tempFilter].className,
+                )}
+              >
+                {TEMPERATURE_META[tempFilter].label}
+                <X className="h-3 w-3" />
+              </button>
             )}
-          >
-            {TEMPERATURE_META[tempFilter].label}
-            <X className="h-3 w-3" />
-          </button>
+            {sort !== 'auto' && (
+              <button
+                type="button"
+                onClick={() => changeSort('auto')}
+                className="inline-flex h-7 items-center gap-1 rounded-full bg-muted px-2.5 text-xs font-semibold"
+              >
+                {SORTS.find((s) => s.key === sort)?.label}
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -211,10 +282,42 @@ export default function CallTodayPage() {
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="rounded-t-[28px] border-border px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+20px)]"
+          className="max-h-[88dvh] overflow-y-auto rounded-t-[28px] border-border px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+20px)]"
         >
-          <div className="mx-auto h-1.5 w-10 rounded-full bg-border" />
-          <SheetTitle className="text-lg font-bold tracking-tight">Filter by stage</SheetTitle>
+          <div className="mx-auto h-1.5 w-10 shrink-0 rounded-full bg-border" />
+          <SheetTitle className="text-lg font-bold tracking-tight">Build your list</SheetTitle>
+
+          <SheetSection title="Type">
+            {typeOptions.length ? (
+              <div className="flex flex-wrap gap-2">
+                {typeOptions.map((t) => {
+                  const on = types.includes(t.key)
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => toggleType(t.key)}
+                      aria-pressed={on}
+                      className={cn(
+                        'inline-flex h-10 max-w-full items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors',
+                        on ? 'bg-foreground text-background' : 'bg-muted text-foreground',
+                      )}
+                    >
+                      {on && <Check className="h-3.5 w-3.5 shrink-0" />}
+                      <span className="truncate">{t.label}</span>
+                      <span className="text-xs tabular-nums opacity-60">{t.count}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Imported lists get a tag automatically (e.g. “Schools”), and it shows up here.
+              </p>
+            )}
+          </SheetSection>
+
+          <SheetSection title="Stage">
           <div className="grid grid-cols-3 gap-2">
             {(['new', 'cold', 'warm', 'hot', 'won', 'lost', 'dnc'] as const).map((t) => (
               <button
@@ -233,10 +336,36 @@ export default function CallTodayPage() {
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          </SheetSection>
+
+          <SheetSection title="Sort">
+            <div className="grid grid-cols-2 gap-2">
+              {SORTS.map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => changeSort(s.key)}
+                  aria-pressed={sort === s.key}
+                  className={cn(
+                    'flex h-11 items-center justify-center gap-1.5 rounded-[14px] text-sm font-semibold transition-colors',
+                    sort === s.key ? 'bg-foreground text-background' : 'bg-muted text-foreground',
+                  )}
+                >
+                  {sort === s.key && <Check className="h-3.5 w-3.5" />}
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </SheetSection>
+
+          <div className="grid shrink-0 grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => setTempFilter(null)}
+              onClick={() => {
+                setTempFilter(null)
+                setTypes([])
+                changeSort('auto')
+              }}
               className="h-12 rounded-full border border-border text-sm font-semibold"
             >
               Clear
@@ -309,7 +438,7 @@ function LeadRow({
   const wa = whatsappLink(lead.phone)
   const overdue = lead.next_call_date && lead.next_call_date < today
   const temp = lead.do_not_call ? 'dnc' : (lead.temperature ?? 'new')
-  const where = [lead.town, lead.industry].filter(Boolean).join(' · ')
+  const where = [lead.town, ...leadTypes(lead)].filter(Boolean).join(' · ')
   return (
     <li className="flex items-center gap-3 rounded-[22px] border border-border bg-card p-3 transition-colors hover:bg-muted/30">
       <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3 text-left">
@@ -366,6 +495,15 @@ function LeadRow({
         ) : null}
       </div>
     </li>
+  )
+}
+
+function SheetSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="shrink-0 space-y-2">
+      <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">{title}</h3>
+      {children}
+    </section>
   )
 }
 

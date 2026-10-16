@@ -20,7 +20,7 @@ export default function FindLeadsPage() {
   const [custom, setCustom] = useState('')
   const [count, setCount] = useState(20)
   const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState<{ leads: PreviewLead[]; source: string } | null>(null)
+  const [results, setResults] = useState<{ leads: PreviewLead[]; source: string; industry: string } | null>(null)
   const [runId, setRunId] = useState(0)
 
   function toggleTown(t: string) {
@@ -41,7 +41,7 @@ export default function FindLeadsPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Search failed')
-      setResults({ leads: data.leads, source: data.source?.label ?? '' })
+      setResults({ leads: data.leads, source: data.source?.label ?? '', industry: industry.trim() })
       setRunId((n) => n + 1)
       if (!data.leads.length) toast.message('No businesses found — try another industry or town.')
     } catch (err) {
@@ -151,7 +151,7 @@ export default function FindLeadsPage() {
           <p className="text-xs text-muted-foreground">
             {results.leads.length} results from {results.source}. Duplicates and Do Not Call numbers are already filtered out.
           </p>
-          <LeadPreview key={runId} leads={results.leads} />
+          <LeadPreview key={runId} leads={results.leads} defaultTag={results.industry} />
         </section>
       ) : null}
     </div>

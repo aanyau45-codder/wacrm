@@ -2,11 +2,13 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { ExternalLink, Loader2 } from 'lucide-react'
+import { ExternalLink, Loader2, Tag } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import { formatDay } from '@/lib/calling/dates'
+import { withTag } from '@/lib/calling/list-tags'
 import { formatPhone } from '@/lib/calling/phone'
 import type { DedupeStatus, LeadInput, PreviewLead } from '@/lib/calling/types'
 import { cn } from '@/lib/utils'
@@ -28,6 +30,8 @@ function toLeadInput(l: PreviewLead): LeadInput {
 
 interface Props {
   leads: PreviewLead[]
+  /** Tag added to every imported lead (e.g. "Schools"); editable here. */
+  defaultTag?: string
   /** Called after a successful import. */
   onImported?: () => void
 }
@@ -36,10 +40,11 @@ interface Props {
  * Preview of leads from search or a file. Only "new" rows can be
  * picked; nothing is saved until "Import selected" is pressed.
  */
-export function LeadPreview({ leads, onImported }: Props) {
+export function LeadPreview({ leads, defaultTag = '', onImported }: Props) {
   const importable = useMemo(() => leads.filter((l) => l.status === 'new'), [leads])
   const [selected, setSelected] = useState<Set<string>>(() => new Set(importable.map((l) => l.key)))
   const [saving, setSaving] = useState(false)
+  const [tag, setTag] = useState(defaultTag)
   const [result, setResult] = useState<{ imported: number; skipped: number; firstDate: string | null; lastDate: string | null } | null>(null)
 
   const counts = useMemo(() => {
@@ -65,7 +70,12 @@ export function LeadPreview({ leads, onImported }: Props) {
       const res = await fetch('/api/calling/leads/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leads: picked.map(toLeadInput) }),
+        body: JSON.stringify({
+          leads: picked.map((l) => {
+            const input = toLeadInput(l)
+            return { ...input, tags: withTag(input.tags, tag) }
+          }),
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Import failed')
@@ -102,6 +112,17 @@ export function LeadPreview({ leads, onImported }: Props) {
 
   return (
     <div className="space-y-3">
+      <label className="flex items-center gap-2 rounded-2xl bg-muted/60 px-3 py-2">
+        <Tag className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className="shrink-0 text-sm font-semibold">List tag</span>
+        <Input
+          value={tag}
+          onChange={(e) => setTag(e.target.value)}
+          maxLength={40}
+          placeholder="e.g. Schools"
+          className="h-9 rounded-xl bg-card"
+        />
+      </label>
       <div className="flex flex-wrap items-center gap-2 text-xs">
         {(Object.keys(STATUS) as DedupeStatus[]).map((s) =>
           counts[s] ? (
