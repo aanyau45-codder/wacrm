@@ -1532,7 +1532,32 @@
       "step4_3": "위의 <strong class=\"text-foreground\">웹훅 콜백 URL</strong>을 붙여넣기",
       "step4_4": "여기서 설정한 것과 동일한 <strong class=\"text-foreground\">인증 토큰</strong>을 입력",
       "step4_5": "\"messages\" 웹훅 필드를 구독",
-      "metaDocs": "Meta WhatsApp API 문서"
+      "metaDocs": "Meta WhatsApp API 문서",
+      "businessApp": {
+        "title": "WhatsApp Business 앱 연결",
+        "description": "휴대폰에 있는 번호를 그대로 사용하세요. WhatsApp Business 앱에서 계속 대화하면서 Argon CRM에서도 같은 대화를 볼 수 있습니다.",
+        "point1": "Facebook으로 로그인하고 비즈니스 번호를 선택하세요.",
+        "point2": "휴대폰의 WhatsApp Business 앱에 표시된 QR 코드를 스캔하세요.",
+        "point3": "원하면 연락처와 최대 6개월간의 대화를 공유할 수 있습니다.",
+        "replaceWarning": "아래에 연결된 현재 번호를 대체합니다.",
+        "connect": "WhatsApp Business 앱 연결",
+        "connecting": "연결 중…",
+        "adminOnly": "소유자와 관리자만 번호를 연결할 수 있습니다.",
+        "cancelled": "연결이 취소되었습니다.",
+        "failed": "WhatsApp Business 앱을 연결하지 못했습니다. 다시 시도하세요.",
+        "sdkFailed": "Facebook 로그인을 불러오지 못했습니다. 연결을 확인하고 다시 시도하세요.",
+        "connectedToast": "WhatsApp Business 앱이 연결되었습니다.",
+        "migrationMissing": "연결되었지만 동기화 상태를 저장하려면 Supabase에서 마이그레이션 044를 실행해야 합니다.",
+        "syncError": "동기화 요청 실패",
+        "connectedDesc": "WhatsApp Business 앱을 통해 연결되었습니다. 휴대폰에서 보낸 메시지도 여기에 표시됩니다.",
+        "contacts": "연락처 동기화",
+        "history": "대화 기록",
+        "requested": "요청됨",
+        "notRequested": "요청 안 됨",
+        "historyProgress": "가져오는 중… {progress}%",
+        "historyDone": "가져오기 완료",
+        "echoNote": "휴대폰에서 보낸 메시지는 자동화나 AI 답장을 실행하지 않습니다."
+      }
     },
     "sections": {
       "overview": "개요",

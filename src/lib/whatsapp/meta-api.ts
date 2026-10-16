@@ -178,6 +178,101 @@ export async function subscribeWabaToApp(
   }
 }
 
+// ============================================================
+// Embedded Signup / Business app coexistence
+// ============================================================
+
+/**
+ * Exchange the short-lived (~30s) code from Embedded Signup's FB.login
+ * for a business integration system user token. Server-side only — it
+ * needs the app secret.
+ */
+export async function exchangeEmbeddedSignupCode(args: {
+  code: string
+  appId: string
+  appSecret: string
+}): Promise<string> {
+  const params = new URLSearchParams({
+    client_id: args.appId,
+    client_secret: args.appSecret,
+    code: args.code,
+  })
+  const response = await fetch(`${META_API_BASE}/oauth/access_token?${params}`)
+  if (!response.ok) {
+    await throwMetaError(response, `Meta token exchange failed: ${response.status}`)
+  }
+  const data = (await response.json()) as { access_token?: string }
+  if (!data.access_token) throw new Error('Meta returned no access token')
+  return data.access_token
+}
+
+/**
+ * Find the WhatsApp Business Account a token was granted for. Fallback
+ * for when the browser never received Embedded Signup's session event.
+ */
+export async function findGrantedWabaId(args: {
+  accessToken: string
+  appId: string
+  appSecret: string
+}): Promise<string | null> {
+  const params = new URLSearchParams({
+    input_token: args.accessToken,
+    access_token: `${args.appId}|${args.appSecret}`,
+  })
+  const response = await fetch(`${META_API_BASE}/debug_token?${params}`)
+  if (!response.ok) return null
+  const data = (await response.json()) as {
+    data?: { granular_scopes?: { scope: string; target_ids?: string[] }[] }
+  }
+  const scope = data.data?.granular_scopes?.find(
+    (s) => s.scope === 'whatsapp_business_management' || s.scope === 'whatsapp_business_messaging',
+  )
+  return scope?.target_ids?.[0] ?? null
+}
+
+/** Phone numbers on a WABA, Business-app numbers first. */
+export async function listWabaPhoneNumbers(args: {
+  wabaId: string
+  accessToken: string
+}): Promise<{ id: string; display_phone_number: string; is_on_biz_app?: boolean }[]> {
+  const response = await fetch(
+    `${META_API_BASE}/${args.wabaId}/phone_numbers?fields=id,display_phone_number,is_on_biz_app`,
+    { headers: { Authorization: `Bearer ${args.accessToken}` } },
+  )
+  if (!response.ok) {
+    await throwMetaError(response, `Meta API error: ${response.status}`)
+  }
+  const data = (await response.json()) as {
+    data?: { id: string; display_phone_number: string; is_on_biz_app?: boolean }[]
+  }
+  return [...(data.data ?? [])].sort((a, b) => Number(!!b.is_on_biz_app) - Number(!!a.is_on_biz_app))
+}
+
+/**
+ * Ask Meta to sync the Business app's contacts (`smb_app_state_sync`) or
+ * chat history (`history`). Each runs once, within 24h of onboarding;
+ * results arrive on the webhook. Returns Meta's request_id.
+ */
+export async function requestSmbAppDataSync(args: {
+  phoneNumberId: string
+  accessToken: string
+  syncType: 'smb_app_state_sync' | 'history'
+}): Promise<string | null> {
+  const response = await fetch(`${META_API_BASE}/${args.phoneNumberId}/smb_app_data`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${args.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ messaging_product: 'whatsapp', sync_type: args.syncType }),
+  })
+  if (!response.ok) {
+    await throwMetaError(response, `Meta sync request failed: ${response.status}`)
+  }
+  const data = (await response.json()) as { request_id?: string }
+  return data.request_id ?? null
+}
+
 export interface GetSubscribedAppsArgs {
   wabaId: string
   accessToken: string

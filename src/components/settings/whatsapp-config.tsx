@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SettingsPanelHead } from './settings-panel-head';
+import { BusinessAppConnect } from './business-app-connect';
 import {
   Accordion,
   AccordionItem,
@@ -44,7 +45,7 @@ export function WhatsAppConfig() {
   // context and key every read off it — so a teammate who just
   // joined an account sees the inviter's saved config without
   // having to re-enter anything.
-  const { user, accountId, loading: authLoading, profileLoading } = useAuth();
+  const { user, accountId, loading: authLoading, profileLoading, canEditSettings } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -553,6 +554,14 @@ export function WhatsAppConfig() {
             )}
           </Alert>
         )}
+
+        <BusinessAppConnect
+          config={config}
+          canEdit={canEditSettings}
+          onConnected={() => {
+            if (accountId) fetchConfig(accountId);
+          }}
+        />
 
         {/* API Credentials */}
         <Card>

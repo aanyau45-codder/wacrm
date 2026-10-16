@@ -1532,7 +1532,32 @@
       "step4_3": "Paste the <strong class=\"text-foreground\">Webhook Callback URL</strong> from above",
       "step4_4": "Enter the same <strong class=\"text-foreground\">Verify Token</strong> you set here",
       "step4_5": "Subscribe to \"messages\" webhook field",
-      "metaDocs": "Meta WhatsApp API Documentation"
+      "metaDocs": "Meta WhatsApp API Documentation",
+      "businessApp": {
+        "title": "Connect WhatsApp Business app",
+        "description": "Use the number already on your phone. Keep chatting in the WhatsApp Business app while Argon CRM sees the same conversations.",
+        "point1": "Log in with Facebook and pick your business number.",
+        "point2": "Scan the QR code shown in the WhatsApp Business app on your phone.",
+        "point3": "Optionally share your contacts and up to 6 months of chats.",
+        "replaceWarning": "This replaces the number currently connected below.",
+        "connect": "Connect WhatsApp Business app",
+        "connecting": "Connecting…",
+        "adminOnly": "Only owners and admins can connect a number.",
+        "cancelled": "Connection cancelled.",
+        "failed": "Could not connect the WhatsApp Business app. Please try again.",
+        "sdkFailed": "Could not load Facebook login. Check your connection and try again.",
+        "connectedToast": "WhatsApp Business app connected.",
+        "migrationMissing": "Connected, but sync status needs migration 044 in Supabase.",
+        "syncError": "Sync request failed",
+        "connectedDesc": "Connected through the WhatsApp Business app. Messages you send from your phone also appear here.",
+        "contacts": "Contacts sync",
+        "history": "Chat history",
+        "requested": "Requested",
+        "notRequested": "Not requested",
+        "historyProgress": "Importing… {progress}%",
+        "historyDone": "Imported",
+        "echoNote": "Messages sent from the phone never trigger automations or AI replies."
+      }
     },
     "sections": {
       "overview": "Overview",

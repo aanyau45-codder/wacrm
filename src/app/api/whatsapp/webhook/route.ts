@@ -14,6 +14,19 @@ import {
   handleTemplateWebhookChange,
   isTemplateWebhookField,
 } from '@/lib/whatsapp/template-webhook'
+import {
+  HISTORY_DECLINED_CODE,
+  coexContent,
+  coexTimestamp,
+  historyStatus,
+  isCoexistenceField,
+  isFromBusiness,
+  isSkippedCoexType,
+  type CoexMessage,
+  type CoexistenceValue,
+  type HistoryChunk,
+  type StateSyncItem,
+} from '@/lib/whatsapp/coexistence'
 
 // The `after()` callback in POST runs within this route's max duration.
 // Inbound processing can fan out to per-media Meta verification calls, so
@@ -230,6 +243,17 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
         await handleTemplateWebhookChange(
           { field: change.field, value: change.value as unknown },
           supabaseAdmin(),
+        )
+        continue
+      }
+
+      // WhatsApp Business app coexistence: messages sent from the phone
+      // app, the one-time chat history and contact sync. Never triggers
+      // automations, flows or AI — these aren't new customer messages.
+      if (isCoexistenceField(change.field)) {
+        await handleCoexistenceChange(
+          change.field,
+          change.value as unknown as CoexistenceValue,
         )
         continue
       }
@@ -1155,4 +1179,174 @@ async function findOrCreateConversation(
   }
 
   return { conversation: newConv, created: true }
+}
+
+// ============================================================
+// WhatsApp Business app coexistence
+// ============================================================
+
+/** The whatsapp_config row for a number, or null (logged). */
+async function loadConfigForNumber(phoneNumberId: string | undefined) {
+  if (!phoneNumberId) return null
+  const { data, error } = await supabaseAdmin()
+    .from('whatsapp_config')
+    .select('*')
+    .eq('phone_number_id', phoneNumberId)
+  if (error || !data || data.length !== 1) {
+    console.error(
+      '[webhook] coexistence: no single config for phone_number_id:',
+      phoneNumberId,
+      error ?? `${data?.length ?? 0} rows`,
+    )
+    return null
+  }
+  return data[0] as { account_id: string; user_id: string }
+}
+
+async function handleCoexistenceChange(field: string, value: CoexistenceValue) {
+  const config = await loadConfigForNumber(value?.metadata?.phone_number_id)
+  if (!config) return
+  const businessDigits = (value.metadata.display_phone_number ?? '').replace(/\D/g, '')
+
+  if (field === 'smb_message_echoes') {
+    for (const echo of value.message_echoes ?? []) {
+      if (!echo.to || isSkippedCoexType(echo.type)) continue
+      await storeSyncedMessages(config, normalizePhone(echo.to), [echo], businessDigits, {
+        markRead: true,
+      })
+    }
+    return
+  }
+
+  if (field === 'history') {
+    for (const chunk of value.history ?? []) await handleHistoryChunk(config, chunk, businessDigits)
+    return
+  }
+
+  if (field === 'smb_app_state_sync') {
+    for (const item of value.state_sync ?? []) await handleStateSyncItem(config, item)
+  }
+}
+
+async function handleHistoryChunk(
+  config: { account_id: string; user_id: string },
+  chunk: HistoryChunk,
+  businessDigits: string,
+) {
+  const declined = chunk.errors?.find((e) => e.code === HISTORY_DECLINED_CODE)
+  const failure = declined ?? chunk.errors?.[0]
+  if (failure) {
+    await updateSyncState(config.account_id, {
+      last_sync_error: declined
+        ? 'Chat history sharing was declined in the WhatsApp Business app.'
+        : `Chat history: ${failure.message || failure.title || `error ${failure.code}`}`,
+    })
+    return
+  }
+
+  for (const thread of chunk.threads ?? []) {
+    if (!thread.id || !thread.messages?.length) continue
+    await storeSyncedMessages(config, normalizePhone(thread.id), thread.messages, businessDigits, {
+      markRead: false,
+    })
+  }
+
+  const progress = chunk.metadata?.progress
+  if (typeof progress === 'number') {
+    await updateSyncState(config.account_id, { history_sync_progress: Math.round(progress) })
+  }
+}
+
+/**
+ * Store echoes / history messages for one customer. Idempotent on the
+ * Meta message id (same unique index as inbound). Never bumps unread and
+ * never dispatches automations, flows, AI or public webhooks.
+ */
+async function storeSyncedMessages(
+  config: { account_id: string; user_id: string },
+  customerPhone: string,
+  messages: CoexMessage[],
+  businessDigits: string,
+  { markRead }: { markRead: boolean },
+) {
+  const kept = messages.filter((m) => m?.id && !isSkippedCoexType(m.type))
+  if (!kept.length) return
+
+  const contactOutcome = await findOrCreateContact(config.account_id, config.user_id, customerPhone, '')
+  if (!contactOutcome) return
+  const convResult = await findOrCreateConversation(config.account_id, config.user_id, contactOutcome.contact.id)
+  if (!convResult) return
+  const conversation = convResult.conversation
+
+  const rows = kept.map((m) => {
+    const fromBusiness = markRead || isFromBusiness(m, businessDigits)
+    const { contentType, contentText, mediaUrl } = coexContent(m)
+    return {
+      conversation_id: conversation.id,
+      sender_type: fromBusiness ? 'agent' : 'customer',
+      content_type: contentType,
+      content_text: contentText,
+      media_url: mediaUrl,
+      message_id: m.id,
+      status: markRead ? 'sent' : historyStatus(m, fromBusiness),
+      created_at: coexTimestamp(m),
+    }
+  })
+
+  const { data: inserted, error } = await supabaseAdmin()
+    .from('messages')
+    .upsert(rows, { onConflict: 'conversation_id,message_id', ignoreDuplicates: true })
+    .select('id')
+  if (error) {
+    console.error('[webhook] coexistence: message insert failed:', error)
+    return
+  }
+  if (!inserted || inserted.length === 0) return
+
+  // Refresh the inbox preview only if these are newer than what it shows.
+  const newest = rows.reduce((a, b) => (b.created_at > a.created_at ? b : a))
+  const current = conversation.last_message_at as string | null
+  const update: Record<string, unknown> = {}
+  if (!current || new Date(newest.created_at) > new Date(current)) {
+    update.last_message_text = newest.content_text || `[${newest.content_type}]`
+    update.last_message_at = newest.created_at
+    update.updated_at = new Date().toISOString()
+  }
+  // Replying from the phone means the business has seen the chat.
+  if (markRead) update.unread_count = 0
+  if (Object.keys(update).length) {
+    const { error: convError } = await supabaseAdmin()
+      .from('conversations')
+      .update(update)
+      .eq('id', conversation.id)
+    if (convError) console.error('[webhook] coexistence: conversation update failed:', convError)
+  }
+}
+
+/**
+ * Phone contact sync. Adds new contacts and fills in a name where we only
+ * had the number; never overwrites a name set in the CRM and never deletes.
+ */
+async function handleStateSyncItem(config: { account_id: string; user_id: string }, item: StateSyncItem) {
+  if (item.type !== 'contact' || !item.contact?.phone_number) return
+  if (item.action !== 'add' && item.action !== 'edit') return
+  const phone = normalizePhone(item.contact.phone_number)
+  if (!phone) return
+  const name = (item.contact.full_name || item.contact.first_name || '').trim()
+
+  const outcome = await findOrCreateContact(config.account_id, config.user_id, phone, '')
+  if (!outcome || !name) return
+  const current = String(outcome.contact.name ?? '')
+  const placeholder = !current || current.replace(/\D/g, '') === phone.replace(/\D/g, '')
+  if (!placeholder) return
+  await supabaseAdmin()
+    .from('contacts')
+    .update({ name, updated_at: new Date().toISOString() })
+    .eq('id', outcome.contact.id)
+}
+
+/** Sync bookkeeping on whatsapp_config (migration 044; no-op before it). */
+async function updateSyncState(accountId: string, fields: Record<string, unknown>) {
+  const { error } = await supabaseAdmin().from('whatsapp_config').update(fields).eq('account_id', accountId)
+  if (error) console.warn('[webhook] coexistence: sync state not saved:', error.message)
 }

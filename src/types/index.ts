@@ -285,6 +285,14 @@ export interface WhatsAppConfig {
   subscribed_apps_at?: string;
   /** Last error from /register; cleared on success. */
   last_registration_error?: string;
+  /** Migration 044. 'coexistence' = connected via the WhatsApp Business app. */
+  connection_type?: 'manual' | 'coexistence' | null;
+  meta_business_id?: string | null;
+  contacts_sync_requested_at?: string | null;
+  history_sync_requested_at?: string | null;
+  /** 0–100 while Meta delivers past chats. */
+  history_sync_progress?: number | null;
+  last_sync_error?: string | null;
 }
 
 // Raw Meta status enum. We persist this verbatim from Meta (sync + webhook)
