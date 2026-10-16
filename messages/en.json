@@ -110,7 +110,7 @@
     "conversationsChart": {
       "title": "Conversations Over Time",
       "description": "Daily message volume by direction",
-      "days": "{count} days",
+      "days": "{count}d",
       "noActivity": "No message activity in this range",
       "noActivityHint": "Send or receive messages to start populating this chart.",
       "incoming": "Incoming",
