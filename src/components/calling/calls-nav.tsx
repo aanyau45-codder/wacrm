@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, FileUp, PhoneCall, Search, Settings2 } from 'lucide-react'
+import { BarChart3, FileUp, History, PhoneCall, Search, Settings2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const ITEMS = [
   { href: '/calls', label: 'Call today', short: 'Today', icon: PhoneCall },
+  { href: '/calls/log', label: 'Call log', short: 'Log', icon: History },
   { href: '/calls/find', label: 'Find leads', short: 'Find', icon: Search },
   { href: '/calls/import', label: 'Import', short: 'Import', icon: FileUp },
   { href: '/calls/dashboard', label: 'Results', short: 'Results', icon: BarChart3 },
