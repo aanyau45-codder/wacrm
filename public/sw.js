@@ -25,6 +25,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.mode !== 'navigate') return
+  // Leave file downloads (the app update APK) and API calls to the
+  // browser: answering them from here broke downloads in the Android app.
+  const path = new URL(event.request.url).pathname
+  if (path.startsWith('/downloads/') || path.startsWith('/api/')) return
   event.respondWith(
     fetch(event.request).catch(() =>
       caches.match(OFFLINE_URL).then((res) => res || Response.error()),
