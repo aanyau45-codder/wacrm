@@ -10,9 +10,9 @@
 export const ANDROID_PACKAGE = "com.argonbuilds.crm";
 
 export const LATEST_APK = {
-  versionCode: 4,
-  versionName: "1.0.3",
-  url: "/downloads/argon-crm-1.0.3.apk",
+  versionCode: 5,
+  versionName: "1.0.4",
+  url: "/downloads/argon-crm-1.0.4.apk",
 } as const;
 
 // sessionStorage key holding the running APK's versionCode (set by the
