@@ -10,7 +10,7 @@
 export const ANDROID_PACKAGE = "com.argonbuilds.crm";
 
 export const LATEST_APK = {
-  versionCode: 3,
-  versionName: "1.0.2",
-  url: "/downloads/argon-crm-1.0.2.apk",
+  versionCode: 4,
+  versionName: "1.0.3",
+  url: "/downloads/argon-crm-1.0.3.apk",
 } as const;
