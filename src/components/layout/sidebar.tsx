@@ -7,12 +7,14 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
+import { useTaskCounts } from "@/hooks/use-task-counts";
 import {
   Bell,
   Bot,
   Crown,
   GitBranch,
   LayoutDashboard,
+  ListChecks,
   LogOut,
   MessageSquare,
   PhoneCall,
@@ -94,6 +96,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
   { href: "/inbox", labelKey: "inbox", icon: MessageSquare },
   { href: "/calls", labelKey: "calls", icon: PhoneCall },
+  { href: "/tasks", labelKey: "tasks", icon: ListChecks },
   { href: "/notifications", labelKey: "notifications", icon: Bell },
   { href: "/contacts", labelKey: "contacts", icon: Users },
   { href: "/pipelines", labelKey: "pipelines", icon: GitBranch },
@@ -122,6 +125,8 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
   const { profile, profileLoading, account, accountRole, signOut } = useAuth();
   const totalUnread = useTotalUnread();
   const unreadNotifications = useUnreadNotifications();
+  const taskCounts = useTaskCounts();
+  const tasksDue = taskCounts.overdue + taskCounts.today;
   // Only surface the account-name strip when it actually carries
   // information. A solo user's personal account is named after them
   // (the 017 signup trigger seeds it from `full_name`), so showing it
@@ -250,6 +255,17 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                       >
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75" />
                         <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
+                      </span>
+                    )}
+                    {item.href === "/tasks" && tasksDue > 0 && (
+                      <span
+                        aria-label={t("tasksDue", { count: tasksDue })}
+                        className={cn(
+                          "flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                          taskCounts.overdue > 0 ? "bg-pastel-coral text-pastel-coral-fg" : "bg-brand text-white",
+                        )}
+                      >
+                        {tasksDue > 9 ? "9+" : tasksDue}
                       </span>
                     )}
                     {showNotificationBadge && (

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
-import { ANDROID_PACKAGE, LATEST_APK } from "@/lib/android-app";
+import { ANDROID_PACKAGE, APK_VERSION_KEY, LATEST_APK } from "@/lib/android-app";
 
-const VERSION_KEY = "argon.apkVersion";
+const VERSION_KEY = APK_VERSION_KEY;
 const DISMISS_KEY = "argon.apkUpdateDismissed";
 
 // Builds before the ?apk= start URL (1.0.0 / 1.0.1) can only be spotted

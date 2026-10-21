@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
 import type { DealStatus } from '@/types'
 import { TEMPERATURES, type CallLead, type CallLog, type CallSettings, type Temperature } from '@/lib/calling/types'
+import { DEFAULT_REMIND_MINUTES, REMIND_OPTIONS } from '@/lib/tasks/tasks'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -105,6 +106,8 @@ export function LogCallForm({ lead, settings, dealStatus, onSaved }: Props) {
   const [tagOptions, setTagOptions] = useState<string[]>(settings.extra_tags)
   const [newTag, setNewTag] = useState('')
   const [remarks, setRemarks] = useState('')
+  const [callbackTime, setCallbackTime] = useState('')
+  const [remindMinutes, setRemindMinutes] = useState<number | null>(DEFAULT_REMIND_MINUTES)
   const [saving, setSaving] = useState(false)
   const [addDeal, setAddDeal] = useState(true)
   const [stageId, setStageId] = useState('')
@@ -175,13 +178,17 @@ export function LogCallForm({ lead, settings, dealStatus, onSaved }: Props) {
           tags,
           remarks: remarks.trim() || null,
           pipeline: willAddDeal ? { stage_id: stageId, value: Number(dealValue.replace(/[^\d.]/g, '')) || 0 } : null,
+          callback: !leavesQueue && nextDate && callbackTime ? { time: callbackTime, remind_minutes: remindMinutes } : null,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Could not save the call')
-      const when = data.lead.next_call_date ? `next call ${formatDay(data.lead.next_call_date, today)}` : 'removed from the queue'
+      const when = data.lead.next_call_date
+        ? `next call ${formatDay(data.lead.next_call_date, today)}${data.task ? ` at ${callbackTime}` : ''}`
+        : 'removed from the queue'
       toast.success(`Logged — ${when}${willAddDeal && data.lead.deal_id ? ' · added to the pipeline' : ''}`)
       if (data.deal_warning) toast.error(`Pipeline not updated: ${data.deal_warning}`)
+      if (data.task_warning) toast.error(`Call-back task not saved: ${data.task_warning}`)
       onSaved(data.lead, data.log, next)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not save the call')
@@ -300,6 +307,35 @@ export function LogCallForm({ lead, settings, dealStatus, onSaved }: Props) {
             </span>
           </div>
         )}
+        {outcome && !leavesQueue && nextDate ? (
+          <div className="mt-2 grid grid-cols-[7.5rem_1fr] gap-2">
+            <Input
+              type="time"
+              value={callbackTime}
+              onChange={(e) => setCallbackTime(e.target.value)}
+              aria-label="Call-back time"
+              className="h-11 rounded-[14px] bg-card"
+            />
+            <select
+              value={remindMinutes ?? ''}
+              onChange={(e) => setRemindMinutes(e.target.value === '' ? null : Number(e.target.value))}
+              disabled={!callbackTime}
+              aria-label="Remind me"
+              className="h-11 min-w-0 rounded-[14px] border border-border bg-card px-3 text-sm disabled:opacity-50"
+            >
+              {REMIND_OPTIONS.map((o) => (
+                <option key={o.label} value={o.value ?? ''}>
+                  {o.value === null ? o.label : `Remind ${o.label.toLowerCase()}`}
+                </option>
+              ))}
+            </select>
+            <p className="col-span-2 text-xs text-muted-foreground">
+              {callbackTime
+                ? 'Added to Tasks with a reminder on your phone.'
+                : 'Add a time to put this call-back in Tasks with a reminder.'}
+            </p>
+          </div>
+        ) : null}
         {parked && !leavesQueue ? (
           <p className="mt-1.5 text-xs text-muted-foreground">
             {settings.failed_attempt_limit} unanswered calls — marked Cold and parked for {settings.park_days} days.

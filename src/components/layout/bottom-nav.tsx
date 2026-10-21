@@ -10,6 +10,7 @@ import {
   GitBranch,
   Home,
   LayoutGrid,
+  ListChecks,
   MessageSquare,
   PhoneCall,
   Radio,
@@ -21,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
+import { useTaskCounts } from "@/hooks/use-task-counts";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 
 // Mobile tab bar (Airy): four destinations plus "More", which opens a
@@ -36,6 +38,7 @@ const TABS = [
 ] as const;
 
 const MORE = [
+  { href: "/tasks", labelKey: "tasks", icon: ListChecks, tone: "bg-pastel-mint text-pastel-mint-fg" },
   { href: "/pipelines", labelKey: "pipelineShort", icon: GitBranch, tone: "bg-pastel-lilac text-pastel-lilac-fg" },
   { href: "/broadcasts", labelKey: "broadcasts", icon: Radio, tone: "bg-pastel-peach text-pastel-peach-fg" },
   { href: "/automations", labelKey: "automations", icon: Zap, tone: "bg-pastel-mint text-pastel-mint-fg" },
@@ -54,6 +57,8 @@ export function BottomNav() {
   const pathname = usePathname();
   const totalUnread = useTotalUnread();
   const unreadNotifications = useUnreadNotifications();
+  const taskCounts = useTaskCounts();
+  const tasksDue = taskCounts.overdue + taskCounts.today;
   const [moreOpen, setMoreOpen] = useState(false);
   const moreActive = MORE.some((m) => isActive(pathname, m.href));
 
@@ -83,7 +88,7 @@ export function BottomNav() {
             icon={LayoutGrid}
             label={t("more")}
             active={moreActive || moreOpen}
-            dot={unreadNotifications > 0}
+            dot={unreadNotifications > 0 || taskCounts.overdue > 0}
           />
         </button>
       </nav>
@@ -109,6 +114,16 @@ export function BottomNav() {
                 {m.href === "/notifications" && unreadNotifications > 0 ? (
                   <span className="absolute top-2.5 right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
                     {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                  </span>
+                ) : null}
+                {m.href === "/tasks" && tasksDue > 0 ? (
+                  <span
+                    className={cn(
+                      "absolute top-2.5 right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold",
+                      taskCounts.overdue > 0 ? "bg-pastel-coral-fg text-white" : "bg-foreground text-background",
+                    )}
+                  >
+                    {tasksDue > 9 ? "9+" : tasksDue}
                   </span>
                 ) : null}
               </Link>

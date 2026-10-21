@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
-import { ChevronRight, GitBranch, Globe, Loader2, MapPin, MessageCircle, Phone, Trash2 } from 'lucide-react'
+import { Bell, ChevronRight, GitBranch, Globe, ListChecks, Loader2, MapPin, MessageCircle, Phone, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,8 @@ import type { CallLead, CallLog, CallSettings } from '@/lib/calling/types'
 import type { DealStatus } from '@/types'
 import { LogCallForm } from './log-call-form'
 import { TemperatureBadge } from './temperature-badge'
+import { TaskSheet } from '@/components/tasks/task-sheet'
+import { formatDue, sortTasks, type Task } from '@/lib/tasks/tasks'
 
 interface Props {
   lead: CallLead | null
@@ -99,6 +101,24 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
       cancelled = true
     }
   }, [leadId])
+
+  // This lead's open tasks (a logged call-back adds one, so refetch on save).
+  const [leadTasks, setLeadTasks] = useState<{ leadId: string; tasks: Task[] } | null>(null)
+  const tasks = lead && leadTasks?.leadId === lead.id ? leadTasks.tasks : []
+  const [taskOpen, setTaskOpen] = useState<string | 'new' | null>(null)
+  const loadTasks = (id: string) =>
+    createClient()
+      .from('tasks')
+      .select('*')
+      .eq('lead_id', id)
+      .is('done_at', null)
+      .order('due_at')
+      .limit(20)
+      .then(({ data }) => setLeadTasks({ leadId: id, tasks: (data ?? []) as Task[] }))
+  useEffect(() => {
+    if (!leadId) return
+    void loadTasks(leadId)
+  }, [leadId, lead?.updated_at])
 
   async function remove() {
     if (!lead || !confirm(`Delete ${lead.business_name} and its call history?`)) return
@@ -283,6 +303,47 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
               )}
             </div>
 
+            <div className="space-y-2 px-4 pt-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Tasks</h3>
+                {canWrite ? (
+                  <Button variant="ghost" size="sm" className="h-8 rounded-full" onClick={() => setTaskOpen('new')}>
+                    <Plus /> Add task
+                  </Button>
+                ) : null}
+              </div>
+              {tasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No open tasks for this lead.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {sortTasks(tasks).map((t) => (
+                    <li key={t.id}>
+                      <button
+                        type="button"
+                        onClick={() => setTaskOpen(t.id)}
+                        className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left hover:bg-muted/50"
+                      >
+                        <ListChecks className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold">{t.title}</span>
+                          <span
+                            className={
+                              new Date(t.due_at) < new Date()
+                                ? 'text-xs font-semibold text-pastel-coral-fg'
+                                : 'text-xs text-muted-foreground'
+                            }
+                          >
+                            {formatDue(t.due_at)}
+                          </span>
+                        </span>
+                        {t.remind_minutes !== null ? <Bell className="h-3.5 w-3.5 text-muted-foreground" /> : null}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <div className="space-y-3 p-4">
               <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Call history</h3>
               {history === null ? (
@@ -321,6 +382,29 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
                 </Button>
               ) : null}
             </div>
+            {/* Inside the panel so it stacks as a nested sheet. */}
+            <TaskSheet
+              open={taskOpen !== null}
+              task={taskOpen && taskOpen !== 'new' ? (tasks.find((t) => t.id === taskOpen) ?? null) : null}
+              draft={{
+                title: `Call ${lead.business_name}`,
+                lead_id: lead.id,
+                deal_id: lead.deal_id ?? null,
+                contact_id: lead.contact_id,
+                leadName: lead.business_name,
+              }}
+              leadName={lead.business_name}
+              canWrite={canWrite}
+              onClose={() => setTaskOpen(null)}
+              onSaved={() => {
+                setTaskOpen(null)
+                void loadTasks(lead.id)
+              }}
+              onDeleted={() => {
+                setTaskOpen(null)
+                void loadTasks(lead.id)
+              }}
+            />
           </>
         ) : null}
       </SheetContent>

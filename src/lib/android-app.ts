@@ -14,3 +14,11 @@ export const LATEST_APK = {
   versionName: "1.0.3",
   url: "/downloads/argon-crm-1.0.3.apk",
 } as const;
+
+// sessionStorage key holding the running APK's versionCode (set by the
+// update banner from ?apk=).
+export const APK_VERSION_KEY = "argon.apkVersion";
+
+// First APK with notifications switched on (task reminders). Older
+// builds must update before reminders can work.
+export const NOTIFICATIONS_MIN_APK = 5;

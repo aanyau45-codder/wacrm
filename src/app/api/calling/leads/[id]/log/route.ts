@@ -6,15 +6,19 @@ import { applyCall } from '@/lib/calling/schedule'
 import { loadCallSettings, str } from '@/lib/calling/server'
 import { TEMPERATURES, type CallLead, type Temperature } from '@/lib/calling/types'
 import { findExistingContact, isUniqueViolation } from '@/lib/contacts/dedupe'
+import { REMIND_OPTIONS, kampalaToIso, scheduleFields } from '@/lib/tasks/tasks'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Log one call: insert a call_logs row, then update the lead's
 // denormalised state (temperature, last outcome, attempts, next date)
 // using the same rules the form previewed. A linked deal follows the
 // call (won / lost / reopened); a Hot call can add the lead to the
-// pipeline when I tick "Add to pipeline" in the form.
+// pipeline when I tick "Add to pipeline" in the form. A call-back time
+// turns the next call into a task with a reminder; calling the lead
+// ticks off its earlier call-back tasks.
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   let ctx
@@ -32,6 +36,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const addStageId = str(body?.pipeline?.stage_id, 64)
   const rawValue = Number(body?.pipeline?.value)
   const dealValue = Number.isFinite(rawValue) && rawValue > 0 ? Math.min(Math.round(rawValue * 100) / 100, 9_999_999_999) : 0
+  const callbackTime =
+    typeof body?.callback?.time === 'string' && TIME_RE.test(body.callback.time) ? (body.callback.time as string) : null
+  const remindMinutes = REMIND_OPTIONS.some((o) => o.value === body?.callback?.remind_minutes)
+    ? (body.callback.remind_minutes as number | null)
+    : null
   const tags: string[] = Array.isArray(body?.tags)
     ? body.tags.map((t: unknown) => str(t, 40)).filter(Boolean).slice(0, 20)
     : []
@@ -115,6 +124,45 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       .single()
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
 
+    // Tasks: this call settles earlier call-backs; a call-back time
+    // books the next one.
+    let taskWarning: string | null = null
+    let task = null
+    try {
+      const { error: closeError } = await db
+        .from('tasks')
+        .update({ done_at: calledAt })
+        .eq('account_id', accountId)
+        .eq('lead_id', lead.id)
+        .eq('source', 'call')
+        .is('done_at', null)
+      if (closeError && callbackTime) throw closeError
+      if (callbackTime && updated.next_call_date) {
+        const dueAt = kampalaToIso(updated.next_call_date, callbackTime)
+        const { data, error } = await db
+          .from('tasks')
+          .insert({
+            account_id: accountId,
+            user_id: userId,
+            title: `${outcome.action === 'meeting' ? 'Meeting with' : 'Call'} ${lead.business_name}`.slice(0, 200),
+            notes: remarks,
+            ...scheduleFields(dueAt, remindMinutes),
+            lead_id: lead.id,
+            deal_id: dealId,
+            contact_id: contactId,
+            source: 'call',
+            call_log_id: log.id,
+          })
+          .select()
+          .single()
+        if (error) throw error
+        task = data
+      }
+    } catch (err) {
+      console.error('[calls] task step failed:', err)
+      taskWarning = err instanceof Error ? err.message : 'Could not save the call-back task'
+    }
+
     // New tags typed in the form join the account's tag list.
     const newTags = tags.filter((t) => !settings.extra_tags.includes(t))
     if (newTags.length) {
@@ -126,7 +174,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         )
     }
 
-    return NextResponse.json({ lead: updated, log, deal_warning: dealWarning })
+    return NextResponse.json({ lead: updated, log, task, deal_warning: dealWarning, task_warning: taskWarning })
   } catch (err) {
     return toErrorResponse(err)
   }
