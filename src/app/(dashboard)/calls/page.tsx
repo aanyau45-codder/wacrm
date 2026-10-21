@@ -222,7 +222,7 @@ export default function CallTodayPage() {
           scrolls sideways: the tabs share one full-width bar and the
           stage filter lives in a bottom sheet. */}
       <div className="sticky top-0 z-10 -mx-4 space-y-2 bg-background/95 px-4 py-2 backdrop-blur sm:mx-0 sm:px-0">
-        <div className="grid grid-cols-4 gap-1 rounded-full bg-muted p-1">
+        <div className="grid grid-cols-4 gap-1 rounded-[18px] bg-muted p-1">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -230,18 +230,19 @@ export default function CallTodayPage() {
               onClick={() => setTab(t.key)}
               aria-pressed={tab === t.key}
               className={cn(
-                'flex h-9 min-w-0 items-center justify-center gap-1 rounded-full px-1 text-[13px] font-semibold transition-colors',
+                'flex min-w-0 flex-col items-center justify-center rounded-[14px] px-0.5 py-1.5 transition-colors',
                 tab === t.key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              <span className="truncate">{t.label}</span>
+              {/* Word on top, count below, so the full word always fits. */}
+              <span className="max-w-full truncate text-[13px] leading-tight font-semibold">{t.label}</span>
               <span
                 className={cn(
-                  'min-w-4 rounded-full text-[11px] tabular-nums',
-                  t.key === 'followups' && followOverdue ? 'bg-pastel-coral px-1 text-pastel-coral-fg' : 'opacity-60',
+                  'mt-0.5 rounded-full text-xs leading-tight font-bold tabular-nums',
+                  t.key === 'followups' && followOverdue ? 'bg-pastel-coral px-1.5 text-pastel-coral-fg' : 'opacity-60',
                 )}
               >
-                {t.count}
+                {t.count.toLocaleString()}
               </span>
             </button>
           ))}
