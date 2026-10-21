@@ -1,5 +1,6 @@
 import { addDays, kampalaDateOf } from './dates'
 import type { CallLead, CallLog, CallSettings, Temperature } from './types'
+import { isFollowUp, isOnList } from './weekly-list'
 
 // Dashboard numbers for the calling layer, computed from leads + logs
 // already loaded in the browser (pure, so it's easy to test).
@@ -16,14 +17,16 @@ export interface CallStats {
   perDay: { date: string; calls: number; pickups: number }[]
   byIndustry: { industry: string; calls: number; pickups: number; positive: number; won: number; pickupRate: number }[]
   byOutcome: { key: string; label: string; count: number }[]
+  /** New leads on the weekly list + follow-ups due today. */
   queueToday: number
+  /** Follow-ups past their date (the new list never goes overdue). */
   overdue: number
 }
 
 const POSITIVE = new Set(['interested', 'meeting'])
 
 export function computeCallStats(
-  leads: Pick<CallLead, 'id' | 'temperature' | 'industry' | 'next_call_date' | 'do_not_call' | 'phone_invalid'>[],
+  leads: Pick<CallLead, 'id' | 'temperature' | 'industry' | 'next_call_date' | 'do_not_call' | 'phone_invalid' | 'attempts'>[],
   logs: Pick<CallLog, 'lead_id' | 'called_at' | 'outcome' | 'temperature_after'>[],
   settings: CallSettings,
   today: string,
@@ -39,9 +42,10 @@ export function computeCallStats(
   let overdue = 0
   for (const l of leads) {
     byTemperature[l.temperature ?? 'new']++
-    if (l.next_call_date && !l.do_not_call && !l.phone_invalid) {
+    if (isOnList(l)) queueToday++
+    else if (isFollowUp(l)) {
       if (l.next_call_date === today) queueToday++
-      else if (l.next_call_date < today) overdue++
+      else if (l.next_call_date! < today) overdue++
     }
   }
 

@@ -9,6 +9,7 @@ const lead = (id: string, temperature: 'hot' | 'won' | 'cold' | null, industry =
   next_call_date: '2026-10-14',
   do_not_call: false,
   phone_invalid: false,
+  attempts: 1,
 })
 // 10:00 Kampala on the given date.
 const at = (date: string) => `${date}T07:00:00Z`

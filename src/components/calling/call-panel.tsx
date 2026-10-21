@@ -151,7 +151,11 @@ export function CallPanel({ lead, settings, canWrite, onClose, onSaved, onDelete
               <SheetDescription>
                 {lead.contact_person ? `${lead.contact_person} · ` : ''}
                 {lead.attempts} {lead.attempts === 1 ? 'call' : 'calls'}
-                {lead.next_call_date ? ` · next ${formatDay(lead.next_call_date, today)}` : ' · not queued'}
+                {lead.next_call_date
+                  ? ` · next ${formatDay(lead.next_call_date, today)}`
+                  : lead.attempts === 0 && !lead.do_not_call && !lead.phone_invalid
+                    ? ' · in pool'
+                    : ' · not queued'}
                 {lead.last_remark ? <span className="italic"> · “{lead.last_remark}”</span> : null}
               </SheetDescription>
               <div className="flex flex-wrap gap-2 pt-1">

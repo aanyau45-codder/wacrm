@@ -34,30 +34,6 @@ export async function loadExistingRefs(db: SupabaseClient, accountId: string): P
   return out
 }
 
-/** Calls already scheduled per date from `fromDate` on. */
-export async function loadScheduledLoad(
-  db: SupabaseClient,
-  accountId: string,
-  fromDate: string,
-): Promise<Record<string, number>> {
-  const load: Record<string, number> = {}
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await db
-      .from('call_leads')
-      .select('next_call_date')
-      .eq('account_id', accountId)
-      .gte('next_call_date', fromDate)
-      .range(from, from + PAGE - 1)
-    if (error) throw error
-    for (const row of data ?? []) {
-      const d = row.next_call_date as string
-      load[d] = (load[d] ?? 0) + 1
-    }
-    if (!data || data.length < PAGE) break
-  }
-  return load
-}
-
 export function str(v: unknown, max = 500): string | null {
   if (typeof v !== 'string' && typeof v !== 'number') return null
   const s = String(v).trim().slice(0, max)

@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Check, Loader2, MessageCircle, Phone, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react'
+import { Check, Loader2, MessageCircle, Phone, RefreshCw, Search, SlidersHorizontal, Sparkles, Undo2, X } from 'lucide-react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
 import { useCan } from '@/hooks/use-can'
@@ -13,14 +14,17 @@ import { ProgressRing } from '@/components/calling/progress-ring'
 import { CallPanel, outcomeLabel } from '@/components/calling/call-panel'
 import { TemperatureBadge } from '@/components/calling/temperature-badge'
 import { useCallSettings } from '@/components/calling/use-call-settings'
-import { endOfWeek, formatDate, formatDay, kampalaStartOfDay, kampalaToday } from '@/lib/calling/dates'
+import { formatDate, formatDay, kampalaStartOfDay, kampalaToday } from '@/lib/calling/dates'
 import { formatPhone, whatsappLink } from '@/lib/calling/phone'
 import { TEMPERATURE_META } from '@/lib/calling/defaults'
 import { countTypes, leadTypes, typeKey } from '@/lib/calling/list-tags'
 import type { CallLead, Temperature } from '@/lib/calling/types'
+import { isFollowUp, isInPool, isOnList } from '@/lib/calling/weekly-list'
 import { cn } from '@/lib/utils'
 
-type Tab = 'today' | 'overdue' | 'week' | 'all'
+// New = this week's list of never-called leads (topped up from the
+// pool by "Refresh list"); follow-ups are leads already called.
+type Tab = 'new' | 'followups' | 'pool' | 'all'
 type SortKey = 'auto' | 'name' | 'newest' | 'oldest' | 'town'
 const PAGE = 1000
 const SORT_STORAGE_KEY = 'calls.sort'
@@ -51,7 +55,7 @@ export default function CallTodayPage() {
   const { settings } = useCallSettings()
   const [leads, setLeads] = useState<CallLead[] | null>(null)
   const [doneToday, setDoneToday] = useState(0)
-  const [tab, setTab] = useState<Tab>('today')
+  const [tab, setTab] = useState<Tab>('new')
   const [query, setQuery] = useState('')
   const [tempFilter, setTempFilter] = useState<Temperature | 'new' | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -121,23 +125,19 @@ export default function CallTodayPage() {
   }
   const filterCount = types.length + (tempFilter ? 1 : 0) + (sort !== 'auto' ? 1 : 0)
 
-  const queued = useMemo(
-    () => (leads ?? []).filter((l) => l.next_call_date && !l.do_not_call && !l.phone_invalid),
-    [leads],
-  )
   const lists = useMemo(() => {
-    const weekEnd = endOfWeek(today)
+    const all = leads ?? []
     return {
-      today: queued.filter((l) => l.next_call_date === today).sort(byPriority),
-      overdue: queued
-        .filter((l) => l.next_call_date! < today)
+      new: all.filter(isOnList).sort(byPriority),
+      followups: all
+        .filter(isFollowUp)
         .sort((a, b) => a.next_call_date!.localeCompare(b.next_call_date!) || byPriority(a, b)),
-      week: queued
-        .filter((l) => l.next_call_date! >= today && l.next_call_date! <= weekEnd)
-        .sort((a, b) => a.next_call_date!.localeCompare(b.next_call_date!) || byPriority(a, b)),
-      all: [...(leads ?? [])].sort(byPriority),
+      pool: all.filter(isInPool).sort(byPriority),
+      all: [...all].sort(byPriority),
     }
-  }, [queued, leads, today])
+  }, [leads])
+  const followDue = lists.followups.filter((l) => l.next_call_date! <= today).length
+  const followOverdue = lists.followups.some((l) => l.next_call_date! < today)
 
   const visible = useMemo(() => {
     let rows = lists[tab]
@@ -169,11 +169,41 @@ export default function CallTodayPage() {
     }
   }
 
+  const [refreshing, setRefreshing] = useState<'refresh' | 'empty' | null>(null)
+  async function refreshList(action: 'refresh' | 'empty') {
+    if (
+      action === 'empty' &&
+      !confirm(`Send the ${lists.new.length} uncalled leads on this week’s list back to the pool?`)
+    ) {
+      return
+    }
+    setRefreshing(action)
+    try {
+      const res = await fetch('/api/calling/leads/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error ?? 'Could not refresh the list')
+      if (action === 'empty') toast.success(`${data.returned} leads sent back to the pool`)
+      else if (data.added > 0) toast.success(`Added ${data.added} new leads · ${data.listSize} on this week’s list`)
+      else if (!data.poolLeft && data.listSize < settings.weekly_target) toast.message('The pool is empty — import more leads')
+      else toast.message(`List is full (${data.listSize} of ${settings.weekly_target}). Finish calling, then refresh.`)
+      await load()
+      setTab('new')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not refresh the list')
+    } finally {
+      setRefreshing(null)
+    }
+  }
+
   const target = settings.daily_target
   const TABS: { key: Tab; label: string; count: number }[] = [
-    { key: 'today', label: 'Today', count: lists.today.length },
-    { key: 'overdue', label: 'Overdue', count: lists.overdue.length },
-    { key: 'week', label: 'Week', count: lists.week.length },
+    { key: 'new', label: 'New', count: lists.new.length },
+    { key: 'followups', label: 'Follow-ups', count: followDue },
+    { key: 'pool', label: 'Pool', count: lists.pool.length },
     { key: 'all', label: 'All', count: lists.all.length },
   ]
 
@@ -183,7 +213,7 @@ export default function CallTodayPage() {
         title="Call today"
         kicker={formatDate(today)}
         description={
-          `${lists.today.length} left today` + (lists.overdue.length ? ` · ${lists.overdue.length} overdue` : '')
+          `${lists.new.length} new to call` + (followDue ? ` · ${followDue} follow-ups due` : '')
         }
         action={<ProgressRing value={doneToday} max={target} />}
       />
@@ -208,7 +238,7 @@ export default function CallTodayPage() {
               <span
                 className={cn(
                   'min-w-4 rounded-full text-[11px] tabular-nums',
-                  t.key === 'overdue' && t.count ? 'bg-pastel-coral px-1 text-pastel-coral-fg' : 'opacity-60',
+                  t.key === 'followups' && followOverdue ? 'bg-pastel-coral px-1 text-pastel-coral-fg' : 'opacity-60',
                 )}
               >
                 {t.count}
@@ -381,6 +411,18 @@ export default function CallTodayPage() {
         </SheetContent>
       </Sheet>
 
+      {leads && leads.length > 0 && (tab === 'new' || tab === 'pool') ? (
+        <WeeklyListBar
+          onList={lists.new.length}
+          goal={settings.weekly_target}
+          inPool={lists.pool.length}
+          canWrite={canWrite}
+          busy={refreshing}
+          onRefresh={() => void refreshList('refresh')}
+          onEmpty={() => void refreshList('empty')}
+        />
+      ) : null}
+
       {/* List */}
       {leads === null ? (
         <div className="flex justify-center py-16">
@@ -390,16 +432,23 @@ export default function CallTodayPage() {
         <EmptyState />
       ) : visible.length === 0 ? (
         <p className="rounded-3xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-          {tab === 'today' ? 'Nothing left for today 🎉' : 'No leads here.'}
+          {tab === 'new'
+            ? lists.pool.length
+              ? 'All done 🎉 Tap “Refresh list” to add new leads from the pool.'
+              : 'All done 🎉 The pool is empty — import more leads.'
+            : tab === 'followups'
+              ? 'No follow-ups yet.'
+              : 'No leads here.'}
         </p>
       ) : (
         <ul className="space-y-2">
-          {visible.map((l) => (
+          {visible.map((l, i) => (
             <LeadRow
               key={l.id}
               lead={l}
               today={today}
-              showDate={tab !== 'today'}
+              comingUp={tab === 'followups' && l.next_call_date! > today && !((visible[i - 1]?.next_call_date ?? today) > today)}
+              showDate={tab === 'followups' || tab === 'all'}
               lastOutcome={outcomeLabel(settings, l.last_outcome)}
               onOpen={() => setOpenId(l.id)}
             />
@@ -425,12 +474,15 @@ export default function CallTodayPage() {
 function LeadRow({
   lead,
   today,
+  comingUp,
   showDate,
   lastOutcome,
   onOpen,
 }: {
   lead: CallLead
   today: string
+  /** First follow-up after today: a "Coming up" divider goes above it. */
+  comingUp?: boolean
   showDate: boolean
   lastOutcome: string
   onOpen: () => void
@@ -440,6 +492,10 @@ function LeadRow({
   const temp = lead.do_not_call ? 'dnc' : (lead.temperature ?? 'new')
   const where = [lead.town, ...leadTypes(lead)].filter(Boolean).join(' · ')
   return (
+    <>
+    {comingUp ? (
+      <li className="px-1 pt-3 text-xs font-bold tracking-wide text-muted-foreground uppercase">Coming up</li>
+    ) : null}
     <li className="flex items-center gap-3 rounded-[22px] border border-border bg-card p-3 transition-colors hover:bg-muted/30">
       <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3 text-left">
         <span
@@ -495,6 +551,66 @@ function LeadRow({
         ) : null}
       </div>
     </li>
+    </>
+  )
+}
+
+/** This week's list vs the goal, with Refresh and "back to pool". */
+function WeeklyListBar({
+  onList,
+  goal,
+  inPool,
+  canWrite,
+  busy,
+  onRefresh,
+  onEmpty,
+}: {
+  onList: number
+  goal: number
+  inPool: number
+  canWrite: boolean
+  busy: 'refresh' | 'empty' | null
+  onRefresh: () => void
+  onEmpty: () => void
+}) {
+  const pct = goal > 0 ? Math.min(100, Math.round((onList / goal) * 100)) : 0
+  return (
+    <div className="space-y-3 rounded-[22px] bg-pastel-sky p-4 text-pastel-sky-fg">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-sm font-semibold">
+          <span className="text-lg font-bold tabular-nums">{onList}</span>
+          <span className="opacity-70"> of {goal} on this week’s list</span>
+        </p>
+        <p className="shrink-0 text-xs font-semibold tabular-nums opacity-70">{inPool.toLocaleString()} in pool</p>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-background/50">
+        <div className="h-full rounded-full bg-current" style={{ width: `${pct}%` }} />
+      </div>
+      {canWrite ? (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={!!busy}
+            className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full bg-foreground text-sm font-semibold text-background disabled:opacity-60"
+          >
+            {busy === 'refresh' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Refresh list
+          </button>
+          {onList > 0 ? (
+            <button
+              type="button"
+              onClick={onEmpty}
+              disabled={!!busy}
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-background/60 px-4 text-sm font-semibold text-foreground disabled:opacity-60"
+            >
+              {busy === 'empty' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
+              Back to pool
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   )
 }
 

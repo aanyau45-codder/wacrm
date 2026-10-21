@@ -7,7 +7,6 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { formatDay } from '@/lib/calling/dates'
 import { withTag } from '@/lib/calling/list-tags'
 import { formatPhone } from '@/lib/calling/phone'
 import type { DedupeStatus, LeadInput, PreviewLead } from '@/lib/calling/types'
@@ -45,7 +44,7 @@ export function LeadPreview({ leads, defaultTag = '', onImported }: Props) {
   const [selected, setSelected] = useState<Set<string>>(() => new Set(importable.map((l) => l.key)))
   const [saving, setSaving] = useState(false)
   const [tag, setTag] = useState(defaultTag)
-  const [result, setResult] = useState<{ imported: number; skipped: number; firstDate: string | null; lastDate: string | null } | null>(null)
+  const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null)
 
   const counts = useMemo(() => {
     const c: Record<DedupeStatus, number> = { new: 0, duplicate: 0, dnc: 0, no_phone: 0 }
@@ -93,16 +92,11 @@ export function LeadPreview({ leads, defaultTag = '', onImported }: Props) {
     return (
       <div className="rounded-3xl bg-pastel-mint p-6 text-center">
         <p className="font-heading text-3xl font-semibold">{result.imported}</p>
-        <p className="text-sm text-foreground/70">leads added to your call queue</p>
-        {result.firstDate ? (
-          <p className="mt-2 text-sm">
-            Scheduled {formatDay(result.firstDate)}
-            {result.lastDate && result.lastDate !== result.firstDate ? ` → ${formatDay(result.lastDate)}` : ''}, highest priority first.
-          </p>
-        ) : null}
+        <p className="text-sm text-foreground/70">leads added to your pool</p>
+        <p className="mt-2 text-sm">Tap “Refresh list” on Calls to add them to this week’s list.</p>
         {result.skipped ? <p className="mt-1 text-xs text-foreground/60">{result.skipped} skipped as duplicates.</p> : null}
         <Link href="/calls" className="mt-4 inline-flex h-10 items-center rounded-full bg-foreground px-5 text-sm font-medium text-background">
-          Start calling
+          Go to Calls
         </Link>
       </div>
     )

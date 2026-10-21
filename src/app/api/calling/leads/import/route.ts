@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { dedupeLeads } from '@/lib/calling/dedupe'
-import { assignInitialDates, firstQueueDate, scoreLead } from '@/lib/calling/schedule'
-import { loadCallSettings, loadExistingRefs, loadScheduledLoad, str } from '@/lib/calling/server'
+import { scoreLead } from '@/lib/calling/schedule'
+import { loadExistingRefs, str } from '@/lib/calling/server'
 import type { LeadInput, LeadSourceId } from '@/lib/calling/types'
 
 // Save the leads the user confirmed (from search, CSV/Excel or the add
 // form). Dedupes again server-side — only "new" rows are inserted —
-// then spreads them over call days, highest priority first.
+// into the pool: "Refresh list" on Calls moves them onto the weekly
+// list (weekly-list.ts).
 
 const MAX_ROWS = 5000
 const SOURCES: LeadSourceId[] = ['google_places', 'ai_web', 'csv', 'manual']
@@ -54,18 +55,11 @@ export async function POST(request: Request) {
 
   try {
     const { supabase: db, accountId, userId } = ctx
-    const [settings, existing] = await Promise.all([
-      loadCallSettings(db, accountId),
-      loadExistingRefs(db, accountId),
-    ])
+    const existing = await loadExistingRefs(db, accountId)
     const checked = dedupeLeads(incoming, existing)
     const fresh = checked
       .filter((l) => l.status === 'new')
       .map((l) => ({ ...l, priority: scoreLead(l) }))
-
-    const start = firstQueueDate(settings)
-    const load = await loadScheduledLoad(db, accountId, start)
-    const dates = assignInitialDates(fresh, settings, start, load)
 
     const rows = fresh.map((l) => ({
       account_id: accountId,
@@ -84,7 +78,7 @@ export async function POST(request: Request) {
       lead_note: l.lead_note ?? null,
       priority: l.priority,
       tags: l.tags ?? [],
-      next_call_date: dates.get(l.key) ?? null,
+      next_call_date: null,
     }))
 
     let imported = 0
@@ -96,13 +90,10 @@ export async function POST(request: Request) {
     }
 
     const skipped = checked.length - fresh.length
-    const scheduled = [...dates.values()].sort()
     return NextResponse.json({
       imported,
       skipped,
       skippedReasons: checked.filter((l) => l.status !== 'new').map((l) => ({ name: l.business_name, reason: l.reason })),
-      firstDate: scheduled[0] ?? null,
-      lastDate: scheduled[scheduled.length - 1] ?? null,
     })
   } catch (err) {
     return toErrorResponse(err)

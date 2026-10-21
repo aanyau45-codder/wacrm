@@ -16,7 +16,7 @@ type Range = 7 | 30 | 90
 const PAGE = 1000
 const pct = (v: number | null) => (v === null ? '—' : `${Math.round(v * 100)}%`)
 
-type LeadRow = Pick<CallLead, 'id' | 'temperature' | 'industry' | 'next_call_date' | 'do_not_call' | 'phone_invalid'>
+type LeadRow = Pick<CallLead, 'id' | 'temperature' | 'industry' | 'next_call_date' | 'do_not_call' | 'phone_invalid' | 'attempts'>
 type LogRow = Pick<CallLog, 'lead_id' | 'called_at' | 'outcome' | 'temperature_after'>
 
 export default function CallResultsPage() {
@@ -35,7 +35,7 @@ export default function CallResultsPage() {
     for (let from = 0; ; from += PAGE) {
       const { data, error } = await db
         .from('call_leads')
-        .select('id, temperature, industry, next_call_date, do_not_call, phone_invalid')
+        .select('id, temperature, industry, next_call_date, do_not_call, phone_invalid, attempts')
         .eq('account_id', accountId)
         .range(from, from + PAGE - 1)
       if (error) break
