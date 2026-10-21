@@ -1758,5 +1758,10 @@
       "reindexTooltip": "Re-embed all documents (e.g. after adding an embeddings key)",
       "loading": "Loading…"
     }
+  },
+  "Offline": {
+    "title": "No internet connection",
+    "body": "Check your internet connection and try again.",
+    "retry": "Try again"
   }
 }

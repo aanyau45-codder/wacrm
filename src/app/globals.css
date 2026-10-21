@@ -318,3 +318,26 @@ html[data-theme="rose"] {
     letter-spacing: -0.015em;
   }
 }
+
+/* Loading screen (<BrandSplash>): the logo slowly goes dark and faint,
+   then back. */
+@keyframes brand-breathe {
+  0%,
+  100% {
+    opacity: 1;
+    filter: none;
+  }
+  50% {
+    opacity: 0.3;
+    filter: brightness(0.55) saturate(0.6);
+  }
+}
+.animate-brand-breathe {
+  animation: brand-breathe 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-brand-breathe {
+    animation: none;
+    opacity: 0.6;
+  }
+}
